@@ -1,0 +1,651 @@
+{
+  "_note": "EXAMPLE DATA for the GrowthX MCP demo. Events, hosts, venues and attendees are fictional.",
+  "events": [
+    {
+      "id": "founders-coffee-seed-stage-2026-11-09",
+      "title": "Seed-Stage Founders Coffee",
+      "description": "An informal breakfast for pre-seed and seed founders to swap fundraising notes, trade intros, and pressure-test their decks. Three partners from early-stage funds rotate through tables and give five-minute feedback on pitches.",
+      "start": "2026-11-09T08:00:00-08:00",
+      "end": "2026-11-09T09:30:00-08:00",
+      "venue": "The Granary Cafe Loft",
+      "neighborhood": "Hayes Valley",
+      "city": "San Francisco",
+      "url": "https://lu.ma/seed-coffee-nov9",
+      "host": "Brightline Founders Circle",
+      "tags": ["fundraising", "community", "b2b-saas"],
+      "audience": ["founders", "investors"],
+      "capacity": 60,
+      "price": "Free",
+      "attendees": [
+        { "name": "Maya Okafor", "role": "Partner", "company": "Northfield Seed", "interests": ["fundraising", "b2b-saas", "ai"], "looking_for": "B2B SaaS startups at pre-seed" },
+        { "name": "Daniel Reyes", "role": "Founder & CEO", "company": "Ledgerline", "interests": ["fintech", "b2b-saas"], "looking_for": "seed investors" },
+        { "name": "Priya Natarajan", "role": "Founder", "company": "Shiftboard AI", "interests": ["ai", "b2b-saas", "growth"], "looking_for": "seed investors" },
+        { "name": "Tom Whitaker", "role": "Angel Investor", "company": "Independent", "interests": ["consumer", "fundraising"], "looking_for": "consumer founders raising pre-seed" },
+        { "name": "Lena Brandt", "role": "Co-founder", "company": "Quillstack", "interests": ["devtools", "open-source"], "looking_for": "technical cofounder" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "mcp-builders-meetup-2026-11-09",
+      "title": "MCP Builders Meetup: Shipping Servers to Production",
+      "description": "Lightning talks from teams running Model Context Protocol servers in production, covering auth, rate limits, and tool design. Bring a laptop for the open demo hour where anyone can show an MCP server in five minutes or less.",
+      "start": "2026-11-09T18:00:00-08:00",
+      "end": "2026-11-09T21:00:00-08:00",
+      "venue": "Foundry Hall",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/mcp-builders-nov",
+      "host": "Context Protocol Collective",
+      "tags": ["mcp", "agents", "devtools", "open-source"],
+      "audience": ["engineers", "founders"],
+      "capacity": 180,
+      "price": "Free",
+      "attendees": [
+        { "name": "Jonah Feld", "role": "Staff Engineer", "company": "Toolwright", "interests": ["mcp", "agents", "infra"] },
+        { "name": "Aiko Tanaka", "role": "Founder", "company": "Relaybox", "interests": ["mcp", "devtools"], "looking_for": "design partners" },
+        { "name": "Marcus Bell", "role": "Developer Advocate", "company": "Stackform", "interests": ["devtools", "open-source", "community"] },
+        { "name": "Sofia Lindqvist", "role": "Investor", "company": "Arcwave Ventures", "interests": ["agents", "devtools", "infra"], "looking_for": "AI startups at pre-seed" },
+        { "name": "Ravi Menon", "role": "Founding Engineer", "company": "Pathgrid", "interests": ["mcp", "agents", "evals"] }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Pizza Sponsor", "price_usd": 750, "perks": "Logo on welcome slide and a shout-out from the stage" },
+        { "name": "Demo Sponsor", "price_usd": 3000, "perks": "5-minute demo slot, logo on Luma page, attendee list opt-ins" }
+      ]
+    },
+    {
+      "id": "ai-agents-builders-night-2026-11-10",
+      "title": "AI Agents Builders Night",
+      "description": "A hands-on evening for engineers building multi-step agents, with talks on planning loops, memory, and recovering from tool failures. The second half is small-group whiteboarding on real architectures attendees bring.",
+      "start": "2026-11-10T18:00:00-08:00",
+      "end": "2026-11-10T21:00:00-08:00",
+      "venue": "Pier Workshop Space",
+      "neighborhood": "Mission Bay",
+      "city": "San Francisco",
+      "url": "https://lu.ma/agents-night-1110",
+      "host": "Loopwise Labs",
+      "tags": ["ai", "agents", "llm", "evals"],
+      "audience": ["engineers", "researchers", "founders"],
+      "capacity": 220,
+      "price": "Free",
+      "attendees": [
+        { "name": "Elena Vasquez", "role": "Head of AI", "company": "Corvid Systems", "interests": ["agents", "evals", "llm"], "looking_for": "senior ML engineers" },
+        { "name": "Kwame Asante", "role": "Research Engineer", "company": "Halcyon AI", "interests": ["agents", "llm", "evals"] },
+        { "name": "Hannah Cho", "role": "Founder", "company": "Taskmesh", "interests": ["agents", "b2b-saas"], "looking_for": "founding engineer" },
+        { "name": "Peter Novak", "role": "Partner", "company": "Signal Peak Capital", "interests": ["ai", "agents", "infra"], "looking_for": "AI startups at pre-seed" },
+        { "name": "Iris Molina", "role": "PM", "company": "Brightfold", "interests": ["agents", "design"] },
+        { "name": "Sam Adeyemi", "role": "Engineer", "company": "Gridnote", "interests": ["agents", "voice"] }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Community", "price_usd": 1000, "perks": "Logo on slides and Luma page" },
+        { "name": "Featured", "price_usd": 5000, "perks": "10-minute talk, booth table, attendee list opt-ins" },
+        { "name": "Title", "price_usd": 12000, "perks": "Naming rights, keynote slot, branded recap video" }
+      ]
+    },
+    {
+      "id": "climate-tech-mixer-2026-11-10",
+      "title": "Climate Tech Founders & Funders Mixer",
+      "description": "A mixer connecting climate founders working on grid, carbon removal, and industrial decarbonization with climate-focused funds and corporate venture teams. Short founder spotlights kick off the night before open networking.",
+      "start": "2026-11-10T17:30:00-08:00",
+      "end": "2026-11-10T20:00:00-08:00",
+      "venue": "Greenhouse Commons",
+      "neighborhood": "Dogpatch",
+      "city": "San Francisco",
+      "url": "https://lu.ma/climate-mixer-nov",
+      "host": "Tidewater Climate Network",
+      "tags": ["climate", "fundraising", "hardware", "community"],
+      "audience": ["founders", "investors", "operators"],
+      "capacity": 150,
+      "price": "$15",
+      "attendees": [
+        { "name": "Grace Holloway", "role": "Principal", "company": "Evergreen Transition Fund", "interests": ["climate", "hardware"], "looking_for": "grid and storage startups at seed" },
+        { "name": "Mateo Silva", "role": "Founder & CEO", "company": "Carbonfold", "interests": ["climate", "hardware"], "looking_for": "seed investors" },
+        { "name": "Nadia Hassan", "role": "Founder", "company": "Voltyard", "interests": ["climate", "infra"], "looking_for": "pilot customers among utilities" },
+        { "name": "Chris Lund", "role": "Head of Partnerships", "company": "Pacific Grid Labs", "interests": ["climate", "b2b-saas"] },
+        { "name": "Yuki Mori", "role": "Operator", "company": "Kelpworks", "interests": ["climate", "growth"] }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Supporter", "price_usd": 1500, "perks": "Logo on signage and Luma page" },
+        { "name": "Host Partner", "price_usd": 6000, "perks": "Welcome remarks, founder spotlight curation, attendee list opt-ins" }
+      ]
+    },
+    {
+      "id": "devtools-gtm-roundtable-2026-11-10",
+      "title": "Selling to Developers: DevTools GTM Roundtable",
+      "description": "Founders and heads of growth from developer-tool companies share what actually worked for bottoms-up adoption, from docs-led growth to open-source funnels. Seated roundtables of eight, moderated, with a strict no-pitch rule.",
+      "start": "2026-11-10T18:30:00-08:00",
+      "end": "2026-11-10T20:30:00-08:00",
+      "venue": "Montgomery Street Conference Loft",
+      "neighborhood": "FiDi",
+      "city": "San Francisco",
+      "url": "https://lu.ma/devtools-gtm",
+      "host": "Commitline GTM Club",
+      "tags": ["devtools", "gtm", "growth", "open-source"],
+      "audience": ["founders", "operators"],
+      "capacity": 64,
+      "price": "$25",
+      "attendees": [
+        { "name": "Olivia Park", "role": "Head of Growth", "company": "Buildkeep", "interests": ["devtools", "growth", "gtm"] },
+        { "name": "Ben Ashworth", "role": "Founder", "company": "Querylane", "interests": ["devtools", "open-source", "gtm"], "looking_for": "first sales hire" },
+        { "name": "Fatima Rahman", "role": "VP Marketing", "company": "Deployhaus", "interests": ["devtools", "gtm"] },
+        { "name": "Leo Grant", "role": "Founder", "company": "Tracebit", "interests": ["devtools", "infra"], "looking_for": "design partners" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "healthtech-lunch-and-learn-2026-11-11",
+      "title": "Healthtech Lunch & Learn: AI in Clinical Workflows",
+      "description": "Clinicians and founders discuss where AI scribes and prior-auth automation are actually being adopted, and what gets blocked by compliance. Lunch is provided and the session closes with a Q&A on HIPAA-ready architectures.",
+      "start": "2026-11-11T12:00:00-08:00",
+      "end": "2026-11-11T13:30:00-08:00",
+      "venue": "Mission Commons Event Room",
+      "neighborhood": "Mission Bay",
+      "city": "San Francisco",
+      "url": "https://lu.ma/health-ai-lunch",
+      "host": "CareStack Founders Guild",
+      "tags": ["healthtech", "ai", "llm", "b2b-saas"],
+      "audience": ["founders", "operators", "pms"],
+      "capacity": 80,
+      "price": "$15",
+      "attendees": [
+        { "name": "Dr. Alicia Moreno", "role": "CMIO", "company": "Bayview Health Partners", "interests": ["healthtech", "ai"] },
+        { "name": "Ethan Kowalski", "role": "Founder", "company": "Chartwise", "interests": ["healthtech", "llm"], "looking_for": "health system design partners" },
+        { "name": "Ruth Abebe", "role": "Partner", "company": "Meridian Health Ventures", "interests": ["healthtech", "fundraising"], "looking_for": "clinical AI startups at seed" },
+        { "name": "Jin Park", "role": "PM", "company": "Medlane", "interests": ["healthtech", "design"] }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Lunch Sponsor", "price_usd": 2000, "perks": "Logo on menus and slides, 2-minute intro" }
+      ]
+    },
+    {
+      "id": "cofounder-matching-night-2026-11-11",
+      "title": "Cofounder Matching Night",
+      "description": "Structured speed-matching for technical and business founders looking for a cofounder, with pre-event profiles so every conversation starts with context. Organizers follow up with mutual matches the next morning.",
+      "start": "2026-11-11T18:30:00-08:00",
+      "end": "2026-11-11T21:00:00-08:00",
+      "venue": "Valencia Street Studio",
+      "neighborhood": "Mission",
+      "city": "San Francisco",
+      "url": "https://lu.ma/cofounder-night",
+      "host": "Zero to One Society",
+      "tags": ["community", "hiring", "ai", "consumer"],
+      "audience": ["founders", "engineers", "operators", "students"],
+      "capacity": 120,
+      "price": "$15",
+      "attendees": [
+        { "name": "Aria Collins", "role": "Ex-Product Lead", "company": "Stealth", "interests": ["consumer", "ai", "design"], "looking_for": "technical cofounder" },
+        { "name": "Victor Huang", "role": "Senior Engineer", "company": "Rivetline", "interests": ["ai", "infra", "agents"], "looking_for": "business cofounder in B2B" },
+        { "name": "Nina Petrova", "role": "Founder", "company": "Stealth", "interests": ["fintech", "b2b-saas"], "looking_for": "technical cofounder" },
+        { "name": "Kofi Mensah", "role": "ML Engineer", "company": "Northlight AI", "interests": ["ai", "llm", "healthtech"], "looking_for": "cofounder in healthtech" },
+        { "name": "Clara Jensen", "role": "Student", "company": "Bay Area University", "interests": ["robotics", "hardware"], "looking_for": "hardware cofounder" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "voice-ai-demo-night-2026-11-11",
+      "title": "Voice AI Demo Night",
+      "description": "Ten teams demo real-time voice agents live on stage, from call-center automation to voice-first consumer apps, with latency numbers shown on screen. Audience votes pick the best demo of the night.",
+      "start": "2026-11-11T18:00:00-08:00",
+      "end": "2026-11-11T20:30:00-08:00",
+      "venue": "Brannan Street Theater",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/voice-demo-night",
+      "host": "Waveform AI Club",
+      "tags": ["voice", "ai", "agents", "consumer"],
+      "audience": ["engineers", "founders", "investors"],
+      "capacity": 250,
+      "price": "Free",
+      "attendees": [
+        { "name": "Isabel Ruiz", "role": "Founder", "company": "Callwise", "interests": ["voice", "agents", "b2b-saas"], "looking_for": "seed investors" },
+        { "name": "Henry Osei", "role": "Partner", "company": "Lumen Street Ventures", "interests": ["voice", "consumer", "ai"], "looking_for": "voice-first consumer apps" },
+        { "name": "Mira Shah", "role": "Speech Researcher", "company": "Echo Labs", "interests": ["voice", "llm", "evals"] },
+        { "name": "Dylan Brooks", "role": "Engineer", "company": "Tonal Stack", "interests": ["voice", "infra"] },
+        { "name": "Ana Costa", "role": "Designer", "company": "Hearth", "interests": ["voice", "design", "consumer"] }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Community", "price_usd": 1000, "perks": "Logo on slides and Luma page" },
+        { "name": "Prize Sponsor", "price_usd": 4000, "perks": "Name the best-demo award, judge seat, attendee list opt-ins" }
+      ]
+    },
+    {
+      "id": "fintech-infra-breakfast-2026-11-12",
+      "title": "Fintech Infra Breakfast",
+      "description": "A small breakfast for founders building payments, ledgers, and compliance infrastructure, with a fireside on selling to banks without losing a year to procurement. Seating is limited to keep conversation focused.",
+      "start": "2026-11-12T08:00:00-08:00",
+      "end": "2026-11-12T09:30:00-08:00",
+      "venue": "Battery Street Club Room",
+      "neighborhood": "FiDi",
+      "city": "San Francisco",
+      "url": "https://lu.ma/fintech-breakfast",
+      "host": "Ledger & Lattice",
+      "tags": ["fintech", "infra", "b2b-saas", "gtm"],
+      "audience": ["founders", "investors", "operators"],
+      "capacity": 40,
+      "price": "$25",
+      "attendees": [
+        { "name": "Rebecca Stone", "role": "GP", "company": "Ironbridge Capital", "interests": ["fintech", "infra"], "looking_for": "fintech infra at seed and Series A" },
+        { "name": "Omar Haddad", "role": "Founder", "company": "Settlr", "interests": ["fintech", "infra"], "looking_for": "bank design partners" },
+        { "name": "Julia Wexler", "role": "Head of Compliance", "company": "Paybridge", "interests": ["fintech", "b2b-saas"] },
+        { "name": "Andre Thomas", "role": "Founder", "company": "Vaultline", "interests": ["fintech", "crypto"], "looking_for": "seed investors" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "llm-evals-deep-dive-2026-11-12",
+      "title": "LLM Evals Deep Dive",
+      "description": "Practitioners walk through how they build eval suites for LLM products, including golden datasets, LLM-as-judge pitfalls, and regression gating in CI. Expect code on screen and a shared repo of examples afterwards.",
+      "start": "2026-11-12T18:00:00-08:00",
+      "end": "2026-11-12T20:30:00-08:00",
+      "venue": "Townsend Street Lab",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/evals-deep-dive",
+      "host": "Benchmark Guild",
+      "tags": ["evals", "llm", "ai", "devtools"],
+      "audience": ["engineers", "researchers", "pms"],
+      "capacity": 160,
+      "price": "Free",
+      "attendees": [
+        { "name": "Dr. Wen Li", "role": "Research Scientist", "company": "Gradient North", "interests": ["evals", "llm"] },
+        { "name": "Caleb Ford", "role": "Founder", "company": "Judgebench", "interests": ["evals", "devtools"], "looking_for": "design partners" },
+        { "name": "Sara Lindgren", "role": "ML Lead", "company": "Fernway", "interests": ["evals", "agents", "llm"], "looking_for": "ML engineers" },
+        { "name": "Noah Klein", "role": "PM", "company": "Atlas Notes", "interests": ["evals", "ai"] },
+        { "name": "Bianca Rossi", "role": "Investor", "company": "Keel Ventures", "interests": ["devtools", "evals", "infra"], "looking_for": "AI infra startups at pre-seed" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Supporter", "price_usd": 1500, "perks": "Logo on slides and shared repo README" },
+        { "name": "Headline", "price_usd": 7500, "perks": "Talk slot, booth table, attendee list opt-ins" }
+      ]
+    },
+    {
+      "id": "design-engineers-salon-2026-11-12",
+      "title": "Design Engineers Salon: Interfaces for AI",
+      "description": "Designers and design engineers share prototypes of AI-native interfaces, from streaming UIs to agent approval flows. Each presenter gets seven minutes and one live critique from the room.",
+      "start": "2026-11-12T18:30:00-08:00",
+      "end": "2026-11-12T21:00:00-08:00",
+      "venue": "Hayes Gallery Annex",
+      "neighborhood": "Hayes Valley",
+      "city": "San Francisco",
+      "url": "https://lu.ma/design-eng-salon",
+      "host": "Pixel & Prompt",
+      "tags": ["design", "ai", "consumer", "agents"],
+      "audience": ["designers", "engineers", "pms"],
+      "capacity": 90,
+      "price": "$15",
+      "attendees": [
+        { "name": "Lucia Ferrari", "role": "Design Engineer", "company": "Canvasly", "interests": ["design", "ai"] },
+        { "name": "James Whitfield", "role": "Head of Design", "company": "Orbit Notes", "interests": ["design", "consumer"], "looking_for": "founding designer" },
+        { "name": "Zara Ali", "role": "Founder", "company": "Promptboard", "interests": ["design", "agents"], "looking_for": "design engineer" },
+        { "name": "Kenji Sato", "role": "PM", "company": "Fable Studio Tools", "interests": ["design", "ai", "consumer"] }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "robotics-hardware-happy-hour-2026-11-13",
+      "title": "Robotics & Hardware Happy Hour",
+      "description": "A relaxed happy hour for people building robots, sensors, and physical AI, hosted in a working prototyping shop with demos on the floor. Great for finding mechanical and embedded engineers.",
+      "start": "2026-11-13T17:30:00-08:00",
+      "end": "2026-11-13T20:30:00-08:00",
+      "venue": "Third Street Makerspace",
+      "neighborhood": "Dogpatch",
+      "city": "San Francisco",
+      "url": "https://lu.ma/robotics-hh",
+      "host": "Actuator Society",
+      "tags": ["robotics", "hardware", "ai", "hiring"],
+      "audience": ["engineers", "founders", "researchers"],
+      "capacity": 140,
+      "price": "Free",
+      "attendees": [
+        { "name": "Diego Navarro", "role": "Founder & CTO", "company": "Graspline Robotics", "interests": ["robotics", "ai"], "looking_for": "embedded engineers" },
+        { "name": "Helen Wu", "role": "Partner", "company": "Forge Hardware Fund", "interests": ["hardware", "robotics"], "looking_for": "robotics startups at seed" },
+        { "name": "Arjun Kapoor", "role": "Robotics Researcher", "company": "Bay Area University", "interests": ["robotics", "llm"] },
+        { "name": "Megan Doyle", "role": "Mechanical Engineer", "company": "Stridebot", "interests": ["hardware", "robotics"] },
+        { "name": "Felix Braun", "role": "Founder", "company": "Sensorfield", "interests": ["hardware", "climate"], "looking_for": "manufacturing partners" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Bar Sponsor", "price_usd": 2500, "perks": "Logo at the bar and on Luma page" }
+      ]
+    },
+    {
+      "id": "ai-startup-hiring-fair-2026-11-13",
+      "title": "AI Startup Hiring Fair",
+      "description": "Thirty seed to Series B AI startups hiring engineers, designers, and GTM roles, with tables organized by role type. Candidates can submit a profile in advance to get pre-matched with companies.",
+      "start": "2026-11-13T17:00:00-08:00",
+      "end": "2026-11-13T20:00:00-08:00",
+      "venue": "Howard Street Event Hall",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/ai-hiring-fair",
+      "host": "Talentloop",
+      "tags": ["hiring", "ai", "agents", "b2b-saas"],
+      "audience": ["engineers", "designers", "operators", "students"],
+      "capacity": 400,
+      "price": "Free",
+      "attendees": [
+        { "name": "Rachel Kim", "role": "Head of Talent", "company": "Corvid Systems", "interests": ["hiring", "ai"], "looking_for": "senior backend engineers" },
+        { "name": "Tariq Aziz", "role": "Founder", "company": "Sheetpilot", "interests": ["agents", "b2b-saas"], "looking_for": "founding engineer" },
+        { "name": "Emily Shaw", "role": "Engineer", "company": "Between roles", "interests": ["ai", "infra"], "looking_for": "ML infra roles" },
+        { "name": "Paulo Mendes", "role": "COO", "company": "Brightfold", "interests": ["hiring", "gtm"], "looking_for": "account executives" },
+        { "name": "Chloe Martin", "role": "Product Designer", "company": "Between roles", "interests": ["design", "ai"], "looking_for": "founding designer role" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Table", "price_usd": 1500, "perks": "Hiring table and listing in candidate guide" },
+        { "name": "Premium Table", "price_usd": 4000, "perks": "Prime table placement, pre-matched candidate list" },
+        { "name": "Presenting", "price_usd": 15000, "perks": "Event naming, keynote, full candidate opt-in list" }
+      ]
+    },
+    {
+      "id": "open-source-ai-hackathon-2026-11-14",
+      "title": "Open Source AI Hackathon",
+      "description": "A full-day hackathon to build open-source agents, MCP servers, and eval tooling, with mentors from infra teams on site. Prizes for the most useful tool and the best contribution to an existing project.",
+      "start": "2026-11-14T09:00:00-08:00",
+      "end": "2026-11-14T21:00:00-08:00",
+      "venue": "Mission Bay Innovation Hub",
+      "neighborhood": "Mission Bay",
+      "city": "San Francisco",
+      "url": "https://lu.ma/oss-ai-hack",
+      "host": "Commons Code Foundation",
+      "tags": ["open-source", "ai", "agents", "mcp", "devtools"],
+      "audience": ["engineers", "students", "researchers"],
+      "capacity": 300,
+      "price": "Free",
+      "attendees": [
+        { "name": "Liam O'Connor", "role": "Maintainer", "company": "Opensieve", "interests": ["open-source", "devtools", "evals"] },
+        { "name": "Asha Raman", "role": "Founder", "company": "Agentbench", "interests": ["agents", "evals", "open-source"], "looking_for": "contributors and founding engineer" },
+        { "name": "Gabriel Santos", "role": "Engineer", "company": "Toolwright", "interests": ["mcp", "agents"] },
+        { "name": "Hye-jin Lee", "role": "Student", "company": "Bay Area University", "interests": ["ai", "llm"], "looking_for": "internship at an AI startup" },
+        { "name": "Oscar Lindahl", "role": "Developer Relations Lead", "company": "Stackform", "interests": ["open-source", "community", "devtools"] },
+        { "name": "Bianca Rossi", "role": "Investor", "company": "Keel Ventures", "interests": ["devtools", "open-source"], "looking_for": "AI infra startups at pre-seed" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Bronze", "price_usd": 2000, "perks": "Logo on site and swag table" },
+        { "name": "Silver", "price_usd": 6000, "perks": "Sponsor a prize track, mentor seats, API credits showcase" },
+        { "name": "Gold", "price_usd": 15000, "perks": "Main stage intro, judge seat, hacker resume book" }
+      ]
+    },
+    {
+      "id": "crypto-builders-brunch-2026-11-15",
+      "title": "Onchain Builders Brunch",
+      "description": "A Sunday brunch for builders working on stablecoin payments, onchain identity, and wallets, with a short panel on what changed in crypto UX this year. Low-key, no token pitches.",
+      "start": "2026-11-15T11:00:00-08:00",
+      "end": "2026-11-15T13:00:00-08:00",
+      "venue": "Columbus Avenue Bistro Upstairs",
+      "neighborhood": "North Beach",
+      "city": "San Francisco",
+      "url": "https://lu.ma/onchain-brunch",
+      "host": "Blockpark Collective",
+      "tags": ["crypto", "fintech", "consumer", "community"],
+      "audience": ["founders", "engineers", "investors"],
+      "capacity": 70,
+      "price": "$25",
+      "attendees": [
+        { "name": "Eli Navarro", "role": "Founder", "company": "Stablepay", "interests": ["crypto", "fintech"], "looking_for": "seed investors" },
+        { "name": "Morgan Lee", "role": "Partner", "company": "Hashgate Capital", "interests": ["crypto", "consumer"], "looking_for": "stablecoin payment startups" },
+        { "name": "Tess Bauer", "role": "Engineer", "company": "Keyring Wallet", "interests": ["crypto", "design"] },
+        { "name": "Sanjay Iyer", "role": "Founder", "company": "IDchain", "interests": ["crypto", "b2b-saas"], "looking_for": "founding engineer" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "pitch-practice-investor-panel-2026-11-17",
+      "title": "Pitch Practice with an Investor Panel",
+      "description": "Eight pre-selected founders pitch for five minutes each and get live, candid feedback from a panel of seed investors. Audience members leave with a fundraising checklist and a list of funds actively writing checks.",
+      "start": "2026-11-17T18:00:00-08:00",
+      "end": "2026-11-17T20:30:00-08:00",
+      "venue": "Sansome Street Auditorium",
+      "neighborhood": "FiDi",
+      "city": "San Francisco",
+      "url": "https://lu.ma/pitch-practice-nov",
+      "host": "Runway Founders Network",
+      "tags": ["fundraising", "ai", "b2b-saas", "consumer"],
+      "audience": ["founders", "investors"],
+      "capacity": 200,
+      "price": "$15",
+      "attendees": [
+        { "name": "Maya Okafor", "role": "Partner", "company": "Northfield Seed", "interests": ["fundraising", "b2b-saas"], "looking_for": "B2B SaaS startups at pre-seed" },
+        { "name": "Henry Osei", "role": "Partner", "company": "Lumen Street Ventures", "interests": ["consumer", "ai"], "looking_for": "voice-first consumer apps" },
+        { "name": "Priya Natarajan", "role": "Founder", "company": "Shiftboard AI", "interests": ["ai", "b2b-saas"], "looking_for": "seed investors" },
+        { "name": "Adam Fischer", "role": "Scout", "company": "Ridgeway Ventures", "interests": ["ai", "devtools"], "looking_for": "AI startups at pre-seed" },
+        { "name": "Leila Karimi", "role": "Founder", "company": "Nestly", "interests": ["consumer", "growth"], "looking_for": "seed investors" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Supporter", "price_usd": 1000, "perks": "Logo on slides and Luma page" },
+        { "name": "Founding Partner", "price_usd": 5000, "perks": "Panel seat, welcome remarks, founder list opt-ins" }
+      ]
+    },
+    {
+      "id": "infra-for-ai-meetup-2026-11-18",
+      "title": "Infra for AI: GPUs, Inference and Cost",
+      "description": "Infra engineers compare notes on serving open-weight models, GPU scheduling, and cutting inference bills without hurting latency. Includes a benchmark show-and-tell from three teams.",
+      "start": "2026-11-18T18:00:00-08:00",
+      "end": "2026-11-18T20:30:00-08:00",
+      "venue": "Folsom Street Lab",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/infra-for-ai",
+      "host": "Kernel Room",
+      "tags": ["infra", "llm", "ai", "open-source"],
+      "audience": ["engineers", "researchers"],
+      "capacity": 180,
+      "price": "Free",
+      "attendees": [
+        { "name": "Ivan Petrov", "role": "Staff Infra Engineer", "company": "Corelight AI", "interests": ["infra", "llm"] },
+        { "name": "Mei Chen", "role": "Founder", "company": "Batchwise", "interests": ["infra", "devtools"], "looking_for": "design partners" },
+        { "name": "Jordan Price", "role": "Engineer", "company": "Rivetline", "interests": ["infra", "open-source"] },
+        { "name": "Peter Novak", "role": "Partner", "company": "Signal Peak Capital", "interests": ["infra", "ai"], "looking_for": "AI infra startups at seed" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Community", "price_usd": 1000, "perks": "Logo on slides" },
+        { "name": "Compute Partner", "price_usd": 8000, "perks": "Talk slot, credits giveaway, attendee list opt-ins" }
+      ]
+    },
+    {
+      "id": "b2b-saas-growth-dinner-2026-11-18",
+      "title": "B2B SaaS Growth Dinner",
+      "description": "A seated dinner for growth and revenue leaders at Series A to C SaaS companies, discussing pipeline generation in an AI-saturated outbound market. Chatham House rules.",
+      "start": "2026-11-18T19:00:00-08:00",
+      "end": "2026-11-18T21:00:00-08:00",
+      "venue": "Presidio Officers Club Dining Room",
+      "neighborhood": "Presidio",
+      "city": "San Francisco",
+      "url": "https://lu.ma/saas-growth-dinner",
+      "host": "Pipeline Collective",
+      "tags": ["b2b-saas", "growth", "gtm"],
+      "audience": ["operators", "founders"],
+      "capacity": 40,
+      "price": "$50",
+      "attendees": [
+        { "name": "Catherine Wells", "role": "CRO", "company": "Brightfold", "interests": ["gtm", "b2b-saas"] },
+        { "name": "Raj Patel", "role": "VP Growth", "company": "Sheetpilot", "interests": ["growth", "ai"] },
+        { "name": "Laura Bennett", "role": "Founder", "company": "Outboundly", "interests": ["gtm", "agents"], "looking_for": "design partners" },
+        { "name": "Miguel Torres", "role": "Head of RevOps", "company": "Ledgerline", "interests": ["gtm", "b2b-saas"] }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "women-in-ai-founders-breakfast-2026-11-19",
+      "title": "Women in AI Founders Breakfast",
+      "description": "A breakfast for women founders and operators building AI companies, featuring a fireside with a founder who recently closed a seed round. Tables are grouped by stage to keep advice relevant.",
+      "start": "2026-11-19T08:30:00-08:00",
+      "end": "2026-11-19T10:00:00-08:00",
+      "venue": "Hayes Street Social Club",
+      "neighborhood": "Hayes Valley",
+      "city": "San Francisco",
+      "url": "https://lu.ma/women-ai-breakfast",
+      "host": "Ascend Founders",
+      "tags": ["ai", "fundraising", "community"],
+      "audience": ["founders", "operators", "investors"],
+      "capacity": 75,
+      "price": "Free",
+      "attendees": [
+        { "name": "Hannah Cho", "role": "Founder", "company": "Taskmesh", "interests": ["agents", "b2b-saas"], "looking_for": "founding engineer" },
+        { "name": "Grace Holloway", "role": "Principal", "company": "Evergreen Transition Fund", "interests": ["climate", "ai"] },
+        { "name": "Elena Vasquez", "role": "Head of AI", "company": "Corvid Systems", "interests": ["agents", "llm"] },
+        { "name": "Ruth Abebe", "role": "Partner", "company": "Meridian Health Ventures", "interests": ["healthtech", "fundraising"], "looking_for": "clinical AI startups at seed" },
+        { "name": "Isabel Ruiz", "role": "Founder", "company": "Callwise", "interests": ["voice", "agents"], "looking_for": "seed investors" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Breakfast Sponsor", "price_usd": 2000, "perks": "Logo on tables and welcome remarks" }
+      ]
+    },
+    {
+      "id": "agentic-commerce-panel-2026-11-19",
+      "title": "Agentic Commerce: When AI Does the Shopping",
+      "description": "A panel on how AI agents are changing checkout, payments, and merchant APIs, with founders from both the agent and the payments side. Followed by networking with drinks.",
+      "start": "2026-11-19T18:00:00-08:00",
+      "end": "2026-11-19T20:30:00-08:00",
+      "venue": "Second Street Loft",
+      "neighborhood": "SoMa",
+      "city": "San Francisco",
+      "url": "https://lu.ma/agentic-commerce",
+      "host": "Checkout Futures",
+      "tags": ["agents", "fintech", "consumer", "mcp"],
+      "audience": ["founders", "pms", "engineers", "investors"],
+      "capacity": 160,
+      "price": "$15",
+      "attendees": [
+        { "name": "Omar Haddad", "role": "Founder", "company": "Settlr", "interests": ["fintech", "agents"], "looking_for": "bank design partners" },
+        { "name": "Sophie Durand", "role": "PM", "company": "Cartwheel Commerce", "interests": ["consumer", "agents"] },
+        { "name": "Tariq Aziz", "role": "Founder", "company": "Sheetpilot", "interests": ["agents", "mcp"], "looking_for": "founding engineer" },
+        { "name": "Morgan Lee", "role": "Partner", "company": "Hashgate Capital", "interests": ["fintech", "consumer"], "looking_for": "agentic payments startups" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "climate-hardware-hackathon-2026-11-21",
+      "title": "Climate x Hardware Hackathon",
+      "description": "A one-day build sprint on sensors, energy monitoring, and grid software, with hardware kits provided and mentors from climate startups. Winning teams get intros to climate funds.",
+      "start": "2026-11-21T09:00:00-08:00",
+      "end": "2026-11-21T20:00:00-08:00",
+      "venue": "Dogpatch Fabrication Works",
+      "neighborhood": "Dogpatch",
+      "city": "San Francisco",
+      "url": "https://lu.ma/climate-hw-hack",
+      "host": "Tidewater Climate Network",
+      "tags": ["climate", "hardware", "robotics", "open-source"],
+      "audience": ["engineers", "students", "founders"],
+      "capacity": 120,
+      "price": "$15",
+      "attendees": [
+        { "name": "Felix Braun", "role": "Founder", "company": "Sensorfield", "interests": ["hardware", "climate"], "looking_for": "manufacturing partners" },
+        { "name": "Nadia Hassan", "role": "Founder", "company": "Voltyard", "interests": ["climate", "infra"], "looking_for": "firmware engineer" },
+        { "name": "Clara Jensen", "role": "Student", "company": "Bay Area University", "interests": ["robotics", "hardware"], "looking_for": "hardware cofounder" },
+        { "name": "Helen Wu", "role": "Partner", "company": "Forge Hardware Fund", "interests": ["hardware", "climate"], "looking_for": "hardware startups at seed" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Kit Sponsor", "price_usd": 3000, "perks": "Branded hardware kits and logo on site" },
+        { "name": "Prize Sponsor", "price_usd": 8000, "perks": "Name a prize track, judge seat, participant resume book" }
+      ]
+    },
+    {
+      "id": "product-managers-ai-workshop-2026-11-23",
+      "title": "PMs Building with AI: Hands-on Workshop",
+      "description": "A practical workshop where product managers prototype an AI feature end to end, from writing evals to shipping a demo with a coding agent. Laptops required; no engineering background needed.",
+      "start": "2026-11-23T17:30:00-08:00",
+      "end": "2026-11-23T20:30:00-08:00",
+      "venue": "Mission Street Learning Studio",
+      "neighborhood": "Mission",
+      "city": "San Francisco",
+      "url": "https://lu.ma/pm-ai-workshop",
+      "host": "Product Craft SF",
+      "tags": ["ai", "evals", "design", "agents"],
+      "audience": ["pms", "designers", "operators"],
+      "capacity": 60,
+      "price": "$50",
+      "attendees": [
+        { "name": "Noah Klein", "role": "PM", "company": "Atlas Notes", "interests": ["evals", "ai"] },
+        { "name": "Iris Molina", "role": "PM", "company": "Brightfold", "interests": ["agents", "design"] },
+        { "name": "Kenji Sato", "role": "PM", "company": "Fable Studio Tools", "interests": ["design", "ai"] },
+        { "name": "Dana Whitman", "role": "Group PM", "company": "Medlane", "interests": ["healthtech", "ai"], "looking_for": "AI-savvy PMs to hire" }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "devtools-founders-demo-day-2026-11-24",
+      "title": "DevTools Founders Demo Day",
+      "description": "Twelve early-stage developer tool companies demo to an audience of engineers and investors, with a focus on AI coding, observability, and CI. Engineers in the crowd are invited to sign up as design partners on the spot.",
+      "start": "2026-11-24T17:30:00-08:00",
+      "end": "2026-11-24T20:30:00-08:00",
+      "venue": "King Street Event Space",
+      "neighborhood": "Mission Bay",
+      "city": "San Francisco",
+      "url": "https://lu.ma/devtools-demo-day",
+      "host": "Commitline GTM Club",
+      "tags": ["devtools", "fundraising", "ai", "gtm"],
+      "audience": ["founders", "engineers", "investors"],
+      "capacity": 240,
+      "price": "Free",
+      "attendees": [
+        { "name": "Leo Grant", "role": "Founder", "company": "Tracebit", "interests": ["devtools", "infra"], "looking_for": "design partners" },
+        { "name": "Caleb Ford", "role": "Founder", "company": "Judgebench", "interests": ["evals", "devtools"], "looking_for": "seed investors" },
+        { "name": "Sofia Lindqvist", "role": "Investor", "company": "Arcwave Ventures", "interests": ["devtools", "infra"], "looking_for": "AI startups at pre-seed" },
+        { "name": "Marcus Bell", "role": "Developer Advocate", "company": "Stackform", "interests": ["devtools", "community"] },
+        { "name": "Ben Ashworth", "role": "Founder", "company": "Querylane", "interests": ["devtools", "open-source"], "looking_for": "first sales hire" }
+      ],
+      "sponsors_wanted": true,
+      "sponsor_tiers": [
+        { "name": "Community", "price_usd": 1000, "perks": "Logo on slides and Luma page" },
+        { "name": "Presenting", "price_usd": 10000, "perks": "Keynote slot, booth, investor and engineer opt-in list" }
+      ]
+    },
+    {
+      "id": "consumer-ai-founders-night-2026-11-24",
+      "title": "Consumer AI Founders Night",
+      "description": "Founders building consumer AI apps share retention curves, distribution hacks, and what went viral versus what stuck. Ends with open mic for quick asks from the audience.",
+      "start": "2026-11-24T18:30:00-08:00",
+      "end": "2026-11-24T21:00:00-08:00",
+      "venue": "Grant Avenue Lounge",
+      "neighborhood": "North Beach",
+      "city": "San Francisco",
+      "url": "https://lu.ma/consumer-ai-night",
+      "host": "Habit Loop Club",
+      "tags": ["consumer", "ai", "growth", "design"],
+      "audience": ["founders", "designers", "investors"],
+      "capacity": 110,
+      "price": "$15",
+      "attendees": [
+        { "name": "Leila Karimi", "role": "Founder", "company": "Nestly", "interests": ["consumer", "growth"], "looking_for": "seed investors" },
+        { "name": "Aria Collins", "role": "Ex-Product Lead", "company": "Stealth", "interests": ["consumer", "ai"], "looking_for": "technical cofounder" },
+        { "name": "Henry Osei", "role": "Partner", "company": "Lumen Street Ventures", "interests": ["consumer", "voice"], "looking_for": "voice-first consumer apps" },
+        { "name": "Ana Costa", "role": "Designer", "company": "Hearth", "interests": ["design", "consumer"] }
+      ],
+      "sponsors_wanted": false
+    },
+    {
+      "id": "year-end-founders-gathering-2026-11-27",
+      "title": "Post-Thanksgiving Founders Gathering",
+      "description": "A casual end-of-month meetup for founders staying in town over the holiday weekend, with a short session on planning Q1 fundraising and hiring. Leftover-pie potluck welcome.",
+      "start": "2026-11-27T17:30:00-08:00",
+      "end": "2026-11-27T20:00:00-08:00",
+      "venue": "Mission Community Workshop",
+      "neighborhood": "Mission",
+      "city": "San Francisco",
+      "url": "https://lu.ma/founders-nov27",
+      "host": "Zero to One Society",
+      "tags": ["community", "fundraising", "hiring"],
+      "audience": ["founders", "operators"],
+      "capacity": 80,
+      "price": "Free",
+      "attendees": [
+        { "name": "Daniel Reyes", "role": "Founder & CEO", "company": "Ledgerline", "interests": ["fintech", "b2b-saas"], "looking_for": "seed investors" },
+        { "name": "Victor Huang", "role": "Senior Engineer", "company": "Rivetline", "interests": ["ai", "agents"], "looking_for": "business cofounder in B2B" },
+        { "name": "Asha Raman", "role": "Founder", "company": "Agentbench", "interests": ["agents", "evals"], "looking_for": "founding engineer" },
+        { "name": "Tom Whitaker", "role": "Angel Investor", "company": "Independent", "interests": ["consumer", "fundraising"], "looking_for": "consumer founders raising pre-seed" }
+      ],
+      "sponsors_wanted": false
+    }
+  ]
+}
