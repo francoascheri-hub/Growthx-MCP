@@ -3,8 +3,8 @@
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v2.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v2.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
