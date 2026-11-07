@@ -101,16 +101,9 @@ const JS = `
   if(!v.items||!v.items.length) grid.appendChild(el("div","empty","No matching events in this window."));
   else v.items.forEach(function(it){
     var c=el("article","card");
-    if(it.url){
-      var cov=document.createElement("a");
-      cov.className="cover"; cov.href=it.url; cov.target="_blank"; cov.rel="noopener";
-      if(it.cover) cov.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
-      c.appendChild(cov);
-    } else {
-      var cov2=el("div","cover");
-      if(it.cover) cov2.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
-      c.appendChild(cov2);
-    }
+    var cov=el("div","cover");
+    if(it.cover) cov.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
+    c.appendChild(cov);
     var body=el("div","body");
     var row=el("div","row");
     row.appendChild(el("span","pill",it.pill));
