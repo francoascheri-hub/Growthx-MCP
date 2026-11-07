@@ -40,10 +40,12 @@ const goal = z.string().min(3).describe("What you want out of SF events, e.g. 'r
 
 const handler = createMcpHandler(
   (server) => {
-    server.tool(
+    server.registerTool(
       "search_events",
-      "Search upcoming San Francisco tech/founder events (GrowthX catalog). Filter by free-text query, tags, date range (YYYY-MM-DD, PT), neighborhood, free only.",
       {
+        description:
+          "Keyword/filter search of upcoming SF tech/founder events (free-text query, tags, date range YYYY-MM-DD PT, neighborhood, free only). For goal-based asks (what to attend, who to meet, fundraising, hiring, learning) use recommend_events; for a schedule use plan_my_week.",
+        inputSchema: {
         query: z.string().optional(),
         tags: z.array(z.string()).optional(),
         date_from: z.string().optional(),
@@ -51,10 +53,16 @@ const handler = createMcpHandler(
         neighborhood: z.string().optional(),
         free_only: z.boolean().optional(),
         limit: z.number().int().min(1).max(50).optional(),
+        },
+        _meta: uiMeta("Searching events…", "Events found"),
       },
-      (a) => run(() => t.searchEvents(a)),
+      (a) => runUi(() => t.searchEvents(a)),
     );
-    server.tool("get_event", "Full details for one event.", { event_id: eventId }, (a) => run(() => t.getEvent(a)));
+    server.registerTool(
+      "get_event",
+      { description: "Full details for one event.", inputSchema: { event_id: eventId }, _meta: uiMeta("Loading event…", "Event") },
+      (a) => runUi(() => t.getEvent(a)),
+    );
     server.registerResource(
       "growthx-events-widget",
       EVENTS_UI_URI,
@@ -81,7 +89,8 @@ const handler = createMcpHandler(
     server.registerTool(
       "recommend_events",
       {
-        description: "Top events for a goal, each with a short 'why'.",
+        description:
+          "Preferred tool for any goal-based ask about SF events (e.g. 'events to meet investors', 'where to hire AI engineers'): top events for the goal, each with a short 'why'. Shows interactive event cards.",
         inputSchema: { goal, limit: z.number().int().min(1).max(10).optional() },
         _meta: uiMeta("Finding events for your goal…", "Recommended events"),
       },
@@ -96,7 +105,8 @@ const handler = createMcpHandler(
     server.registerTool(
       "plan_my_week",
       {
-        description: "Non-conflicting agenda of events for a week (30-min buffer between events), ranked by goal.",
+        description:
+          "Preferred tool for 'plan my week' / schedule asks: non-conflicting agenda of events for a week (30-min buffer), ranked by goal. Shows interactive event cards.",
         inputSchema: {
           goal,
           week_start: z.string().optional().describe("Any date in the target week, YYYY-MM-DD; defaults to the next week with events"),
@@ -110,8 +120,14 @@ const handler = createMcpHandler(
     server.tool("who_to_meet", "Who to meet at an event for your goal (guests, hosts, sponsors).", { event_id: eventId, goal }, (a) =>
       run(() => t.whoToMeet(a)),
     );
-    server.tool("event_brief", "One-page prep brief for an event: TL;DR, logistics, people, talking points.", { event_id: eventId }, (a) =>
-      run(() => t.eventBrief(a)),
+    server.registerTool(
+      "event_brief",
+      {
+        description: "One-page prep brief for an event: TL;DR, logistics, people, talking points.",
+        inputSchema: { event_id: eventId },
+        _meta: uiMeta("Preparing brief…", "Event brief"),
+      },
+      (a) => runUi(() => t.eventBrief(a)),
     );
     server.tool("register_event", "Registration (Luma) link for an event. Never registers on your behalf.", { event_id: eventId }, (a) =>
       run(() => t.registerEvent(a)),
@@ -119,15 +135,18 @@ const handler = createMcpHandler(
     server.tool("add_to_calendar", "Google Calendar link plus .ics file content for an event.", { event_id: eventId }, (a) =>
       run(() => t.addToCalendar(a)),
     );
-    server.tool(
+    server.registerTool(
       "sponsor_match",
-      "For brands: events whose audience matches yours, with past sponsors, reach and tiers within budget.",
       {
-        audience: z.string().min(3).describe("Who you want to reach, e.g. 'AI infra engineers at startups'"),
-        budget: z.number().min(0).optional().describe("USD"),
-        limit: z.number().int().min(1).max(20).optional(),
+        description: "For brands: events whose audience matches yours, with past sponsors, reach and tiers within budget.",
+        inputSchema: {
+          audience: z.string().min(3).describe("Who you want to reach, e.g. 'AI infra engineers at startups'"),
+          budget: z.number().min(0).optional().describe("USD"),
+          limit: z.number().int().min(1).max(20).optional(),
+        },
+        _meta: uiMeta("Matching events…", "Sponsorship matches"),
       },
-      (a) => run(() => t.sponsorMatch(a)),
+      (a) => runUi(() => t.sponsorMatch(a)),
     );
     server.tool(
       "trending_topics",
@@ -135,11 +154,14 @@ const handler = createMcpHandler(
       { days: z.number().int().min(1).max(90).optional(), limit: z.number().int().min(1).max(30).optional() },
       (a) => run(() => t.trendingTopics(a)),
     );
-    server.tool(
+    server.registerTool(
       "similar_events",
-      "Events similar to a given one (shared topics, same host/community).",
-      { event_id: eventId, limit: z.number().int().min(1).max(20).optional() },
-      (a) => run(() => t.similarEvents(a)),
+      {
+        description: "Events similar to a given one (shared topics, same host/community).",
+        inputSchema: { event_id: eventId, limit: z.number().int().min(1).max(20).optional() },
+        _meta: uiMeta("Finding similar events…", "Similar events"),
+      },
+      (a) => runUi(() => t.similarEvents(a)),
     );
   },
   {

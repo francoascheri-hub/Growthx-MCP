@@ -79,7 +79,8 @@ const JS = `
     if(ev.host) m.appendChild(el("span","","Host: "+ev.host));
     if(ev.price) m.appendChild(el("span","price",ev.price));
     c.appendChild(m);
-    if(ev.why) c.appendChild(el("div","why",ev.why));
+    var why=ev.why||ev.fit||(ev.shared_tags&&ev.shared_tags.length?"Shared topics: "+ev.shared_tags.join(", "):"");
+    if(why) c.appendChild(el("div","why",why));
     if(ev.tags&&ev.tags.length){ var t=el("div","tags"); ev.tags.slice(0,6).forEach(function(x){ t.appendChild(el("span","tag",x)); }); c.appendChild(t); }
     var b=el("div","btns");
     if(ev.url){ var r=el("button","pri","Register"); r.type="button"; r.onclick=function(){ openLink(ev.url); }; b.appendChild(r); }
@@ -91,12 +92,18 @@ const JS = `
 
   function render(data){
     if(!data||typeof data!=="object") return;
-    var items=data.agenda||data.recommendations;
-    if(!Array.isArray(items)) return;
+    var items=data.agenda||data.recommendations||data.results||data.similar||data.matches||data.events, heading;
+    if(!Array.isArray(items)){
+      if(data.event&&data.event.title){ items=[Object.assign({},data.event,{why:data.tldr})]; heading="Event brief"; }
+      else if(data.title&&data.start){ items=[data]; heading="Event"; }
+      else return;
+    }
+    if(!heading) heading=data.goal?("For: "+data.goal):data.agenda?"Your week":data.audience?("Sponsor fit: "+data.audience)
+      :data.similar?("Similar to: "+((data.event&&data.event.title)||"this event")):data.results?"Search results":"Recommended events";
     root.textContent="";
     var w=el("div","wrap"), h=el("header"), left=el("div");
     left.appendChild(el("div","brand","GrowthX \\u00b7 SF events"));
-    left.appendChild(el("h1","",data.goal?("For: "+data.goal):(data.agenda?"Your week":"Recommended events")));
+    left.appendChild(el("h1","",heading));
     h.appendChild(left);
     if(data.week&&data.week.start) h.appendChild(el("div","sub","Week "+data.week.start+" \\u2192 "+data.week.end));
     else h.appendChild(el("div","sub",items.length+" pick"+(items.length===1?"":"s")));
