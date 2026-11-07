@@ -60,3 +60,5 @@ Demo prompt: *"I'm a seed-stage AI agents founder in SF raising a pre-seed round
 ## Deploy (Vercel)
 
 Import the repo and set the env vars from `.env.example`. For intel, use a **SELECT-only Postgres role** scoped to the `intel` schema. Don't use the `postgres` superuser connection string.
+
+The role `growthx_mcp_ro` exists for this purpose. It has `USAGE` on `intel`, `SELECT` on its tables (default privileges included), `statement_timeout=10s` and `default_transaction_read_only=on`. Writes fail at the privilege level, and it has no access to other schemas. With the Supabase pooler, the username is `growthx_mcp_ro.<project-ref>`.
