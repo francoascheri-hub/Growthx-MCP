@@ -1,118 +1,149 @@
 import { headers } from "next/headers";
+import fixtures from "@/data/events.json";
 import CopyButton from "./copy-button";
 
 export const dynamic = "force-dynamic";
 
-const TOOLS: { name: string; desc: string }[] = [
-  { name: "search_events", desc: "Find SF events by keyword, date range, topic, or neighborhood." },
-  { name: "get_event", desc: "Full details for one event: time, venue, hosts, speakers, link." },
-  { name: "recommend_events", desc: "Ranked picks matched to your role, stage, and goals." },
-  { name: "draft_intro", desc: "Write a short, specific intro message for someone at an event." },
-  { name: "plan_my_week", desc: "Build a non-conflicting weekly schedule of the best events." },
-  { name: "who_to_meet", desc: "Speakers, hosts, and sponsors worth meeting at an event, and why." },
-  { name: "event_brief", desc: "A one-page prep brief: context, people, talking points." },
-  { name: "register_event", desc: "Get the registration link and steps to RSVP." },
-  { name: "add_to_calendar", desc: "Google Calendar link and .ics data for any event." },
-  { name: "sponsor_match", desc: "Events whose audience fits what you want to sponsor or sell." },
-  { name: "trending_topics", desc: "What the SF builder scene is talking about this week." },
-  { name: "similar_events", desc: "More events like one you already liked." },
+type FixtureEvent = { id: string; title: string; start: string; end: string; venue: string; neighborhood: string; tags: string[]; audience: string[] };
+
+const TOOLS: [string, string][] = [
+  ["search_events", "Filter SF events by topic, date, area"],
+  ["get_event", "Full details for one event"],
+  ["recommend_events", "Top 3 for your goal, with why"],
+  ["plan_my_week", "Non-conflicting weekly agenda"],
+  ["who_to_meet", "Guests, hosts, sponsors to find"],
+  ["draft_intro", "Short intro DM before the event"],
+  ["event_brief", "One-page prep brief"],
+  ["register_event", "Luma registration link"],
+  ["add_to_calendar", "Google Calendar + .ics"],
+  ["sponsor_match", "Events that fit your audience"],
+  ["trending_topics", "What SF is building this week"],
+  ["similar_events", "More like this one"],
 ];
 
-const DEMO_PROMPT =
-  "I'm a seed-stage AI agents founder in SF raising a pre-seed round. Plan my week of Nov 9 with GrowthX: pick non-conflicting events, tell me who to meet at each, draft an intro for the best one, and give me calendar links.";
+const DEMO_PROMPT = "Plan my week to meet seed AI investors";
 
-function CodeBlock({ code }: { code: string }) {
-  return (
-    <div className="code">
-      <pre>
-        <code>{code}</code>
-      </pre>
-      <CopyButton text={code} />
-    </div>
-  );
+// Static demo: 3 non-overlapping investor-friendly events from the example fixtures.
+function demoEvents(): FixtureEvent[] {
+  const events = (fixtures as { events: FixtureEvent[] }).events
+    .filter((e) => e.tags.includes("ai") && (e.tags.includes("fundraising") || e.audience.includes("investors")))
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const picked: FixtureEvent[] = [];
+  for (const e of events) {
+    if (picked.length === 3) break;
+    if (picked.some((p) => p.start.slice(0, 10) === e.start.slice(0, 10))) continue;
+    picked.push(e);
+  }
+  return picked;
 }
 
-export default async function Home() {
+const when = (iso: string) =>
+  new Date(iso).toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
+
+async function siteUrl() {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   const h = await headers();
   const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const url = `${proto}://${host}/api/mcp`;
+  return `${proto}://${host}`;
+}
 
-  const claudeCode = `claude mcp add --transport http growthx ${url}`;
-  const desktopConfig = JSON.stringify(
-    { mcpServers: { growthx: { command: "npx", args: ["-y", "mcp-remote", url] } } },
-    null,
-    2,
-  );
-  const cursorConfig = JSON.stringify({ mcpServers: { growthx: { url } } }, null, 2);
+export default async function Home() {
+  const mcpUrl = `${await siteUrl()}/api/mcp`;
+  const cursorLink = `cursor://anysphere.cursor-deeplink/mcp/install?name=growthx&config=${encodeURIComponent(
+    Buffer.from(JSON.stringify({ url: mcpUrl })).toString("base64"),
+  )}`;
+  const configs: { title: string; note: string; code: string }[] = [
+    { title: "Claude Code", note: "Terminal", code: `claude mcp add --transport http growthx ${mcpUrl}` },
+    { title: "Cursor", note: "~/.cursor/mcp.json", code: JSON.stringify({ mcpServers: { growthx: { url: mcpUrl } } }, null, 2) },
+    { title: "ChatGPT", note: "Settings → Connectors → Advanced → Developer mode → Create", code: mcpUrl },
+  ];
+  const demo = demoEvents();
 
   return (
-    <main className="wrap">
-      <header className="hero">
-        <p className="eyebrow">GrowthX · MCP server</p>
-        <h1>Add GrowthX to your agent</h1>
-        <p className="lede">
-          Events discovery for SF founders and builders — not another bot, but a public MCP server your
-          agent already knows how to use.
-        </p>
-        <div className="url">
-          <code>{url}</code>
-          <CopyButton text={url} label="Copy URL" />
-        </div>
-      </header>
+    <main>
+      <nav className="nav">
+        <span className="logo">
+          <span className="dot" />
+          GrowthX
+        </span>
+        <span className="pill">MCP server · read-only</span>
+      </nav>
 
-      <section>
-        <h2>Connect</h2>
+      <section className="hero">
+        <div className="hero-copy">
+          <h1>Add GrowthX to your agent</h1>
+          <p className="sub">SF tech events, people to meet and intros, inside Claude, Cursor or ChatGPT. No new app.</p>
 
-        <div className="client">
-          <h3>Claude Code</h3>
-          <CodeBlock code={claudeCode} />
-        </div>
+          <div className="url-field">
+            <code>{mcpUrl}</code>
+            <CopyButton text={mcpUrl} />
+          </div>
 
-        <div className="client">
-          <h3>Claude Desktop / claude.ai</h3>
-          <p>
-            Settings → Connectors → Add custom connector → paste the URL. Or add this to{" "}
-            <code className="inline">claude_desktop_config.json</code>:
-          </p>
-          <CodeBlock code={desktopConfig} />
-        </div>
-
-        <div className="client">
-          <h3>Cursor</h3>
-          <p>
-            Add to <code className="inline">~/.cursor/mcp.json</code>:
-          </p>
-          <CodeBlock code={cursorConfig} />
+          <div className="actions">
+            <details className="claude-steps">
+              <summary className="btn primary">Add to Claude</summary>
+              <ol>
+                <li>Open Claude → Settings → Connectors</li>
+                <li>Click “Add custom connector”</li>
+                <li>Name it GrowthX and paste the MCP URL above</li>
+              </ol>
+            </details>
+            <a className="btn" href={cursorLink}>
+              Add to Cursor
+            </a>
+          </div>
         </div>
 
-        <div className="client">
-          <h3>ChatGPT</h3>
-          <p>Settings → Connectors → Developer mode → add the MCP server URL above.</p>
+        <div className="chat" aria-label="Example conversation">
+          <div className="bubble user">{DEMO_PROMPT}</div>
+          <div className="bubble agent">
+            <span className="tool-call">growthx · plan_my_week</span>
+            <p>Here are 3 non-conflicting picks, ranked for you:</p>
+            {demo.map((e) => (
+              <div className="event-card" key={e.id}>
+                <div className="event-when">{when(e.start)}</div>
+                <div className="event-title">{e.title}</div>
+                <div className="event-meta">{[e.venue, e.neighborhood].filter(Boolean).join(" · ")}</div>
+              </div>
+            ))}
+            <div className="added">✓ Added to calendar</div>
+          </div>
+          <p className="chat-note">Example data</p>
         </div>
       </section>
 
       <section>
-        <h2>Tools</h2>
-        <ul className="tools">
-          {TOOLS.map((t) => (
-            <li key={t.name}>
-              <code>{t.name}</code>
-              <span>{t.desc}</span>
-            </li>
+        <h2>12 tools your agent can call</h2>
+        <div className="chips">
+          {TOOLS.map(([name, desc]) => (
+            <div className="chip" key={name}>
+              <code>{name}</code>
+              <span>{desc}</span>
+            </div>
           ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2>Try it</h2>
-        <div className="prompt">
-          <p>{DEMO_PROMPT}</p>
-          <CopyButton text={DEMO_PROMPT} label="Copy prompt" />
         </div>
       </section>
 
-      <footer>Fixtures mode uses example data. Read-only. No account needed.</footer>
+      <section>
+        <h2>Configs</h2>
+        <div className="configs">
+          {configs.map((c) => (
+            <div className="config" key={c.title}>
+              <div className="config-head">
+                <div>
+                  <strong>{c.title}</strong>
+                  <span>{c.note}</span>
+                </div>
+                <CopyButton text={c.code} />
+              </div>
+              <pre>{c.code}</pre>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer>Read-only. No account needed. Events from the GrowthX catalog of SF tech events.</footer>
     </main>
   );
 }
