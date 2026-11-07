@@ -162,3 +162,30 @@ const JS = `
 export function eventsWidgetHtml(): string {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${CSS}</style></head><body><div id="app"><div class="wrap"><div class="empty">Loading events…</div></div></div><script>${JS}</script></body></html>`;
 }
+
+// Static fallback for clients that don't render MCP Apps (e.g. Claude.ai web): same look, no JS.
+export type FallbackCard = { title?: string; when?: string; venue?: string; why?: string; url?: string };
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+
+const FALLBACK_CSS = `${CSS}
+.hero{background:var(--g);color:#fff;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.hero .brand{color:#cfe9da}.hero h1{color:#fff;font-size:18px}.hero .sub{color:#e3f2e9}
+a.pri{display:inline-block;text-decoration:none;font-size:13px;font-weight:600;border-radius:8px;padding:6px 12px;border:1px solid var(--g)}
+`;
+
+export function eventsFallbackHtml(heading: string, cards: FallbackCard[]): string {
+  const body = cards.length
+    ? cards
+        .map((c) => {
+          const when = c.when ? `<div class="when">${esc(/\bPT$/.test(c.when) ? c.when : `${c.when} PT`)}</div>` : "";
+          const venue = c.venue ? `<div class="meta"><span>${esc(c.venue)}</span></div>` : "";
+          const why = c.why ? `<div class="why">${esc(c.why)}</div>` : "";
+          const btn = c.url && /^https?:\/\//.test(c.url) ? `<div class="btns"><a class="pri" href="${esc(c.url)}" target="_blank" rel="noopener">Register on Luma</a></div>` : "";
+          return `<article class="card">${when}<div class="title">${esc(c.title || "Untitled event")}</div>${venue}${why}${btn}</article>`;
+        })
+        .join("")
+    : `<div class="empty">No matching events found.</div>`;
+  const n = `${cards.length} event${cards.length === 1 ? "" : "s"}`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${FALLBACK_CSS}</style></head><body><div class="wrap"><header class="hero"><div><div class="brand">GrowthX \u00b7 SF events</div><h1>${esc(heading)}</h1><div class="sub">${n}</div></div></header><div class="list">${body}</div></div></body></html>`;
+}

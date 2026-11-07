@@ -1,7 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import * as t from "@/lib/tools";
-import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsWidgetHtml } from "@/lib/ui";
+import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsFallbackHtml, eventsWidgetHtml, type FallbackCard } from "@/lib/ui";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,14 +16,28 @@ async function run(fn: () => Promise<unknown>) {
   }
 }
 
+const RENDER =
+  'RENDER: Create one HTML artifact titled "GrowthX events" containing EXACTLY the html block below, byte-for-byte. Do not edit, restyle, summarize or add content. After it, write at most 1 sentence.';
 const FALLBACK =
-  "If your client did not render the GrowthX widget, present the results as a single HTML artifact of event cards (green hero header, title, date/time, venue, why-it-matters line, Luma link button), using only the returned data.";
+  "If your client did not render the GrowthX widget, follow the RENDER directive in the tool result: create one HTML artifact containing EXACTLY the provided html block, byte-for-byte, with no edits or additions, then write at most 1 sentence.";
 
 type Ev = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 
+// Same heading as the widget (lib/ui.ts render()).
+function heading(data: Ev) {
+  const ev = data.event as Ev | undefined;
+  if (!["agenda", "recommendations", "results", "similar", "matches"].some((k) => Array.isArray(data[k])))
+    return ev?.title ? "Event brief" : "Event";
+  if (data.goal) return `For: ${data.goal}`;
+  if (data.agenda) return "Your week";
+  if (data.audience) return `Sponsor fit: ${data.audience}`;
+  if (data.similar) return `Similar to: ${str(ev?.title) ?? "this event"}`;
+  return data.results ? "Search results" : "Recommended events";
+}
+
 // Same item extraction as the widget (lib/ui.ts render()), reduced to card fields.
-function cards(data: Ev) {
+function cards(data: Ev): FallbackCard[] {
   const list = ["agenda", "recommendations", "results", "similar", "matches"].map((k) => data[k]).find(Array.isArray) as Ev[] | undefined;
   const ev = data.event as Ev | undefined;
   const items = list ?? (ev?.title ? [{ ...ev, why: data.tldr }] : data.title && data.start ? [data] : []);
@@ -40,11 +54,11 @@ function cards(data: Ev) {
 }
 
 // Same text JSON as run(), plus structuredContent for MCP Apps / OpenAI Apps widgets,
-// plus compact card data and an artifact fallback for clients that don't render the widget.
+// plus a deterministic HTML artifact for clients that don't render the widget.
 async function runUi(fn: () => Promise<unknown>) {
   try {
     const data = (await fn()) as Ev;
-    const fallback = `${FALLBACK}\n\nCards:\n\`\`\`json\n${JSON.stringify(cards(data))}\n\`\`\``;
+    const fallback = `${RENDER}\n\n\`\`\`html\n${eventsFallbackHtml(heading(data), cards(data))}\n\`\`\``;
     return { content: [...json(data).content, { type: "text" as const, text: fallback }], structuredContent: data };
   } catch (err) {
     return { ...json({ error: (err as Error).message }), isError: true };
