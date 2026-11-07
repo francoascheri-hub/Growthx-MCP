@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import * as t from "@/lib/tools";
@@ -5,6 +6,13 @@ import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, even
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+// Claude serves MCP Apps from a per-server sandbox origin: sha256(server URL)[:32] + ".claudemcpcontent.com".
+// https://claude.com/docs/connectors/building/mcp-apps/getting-started
+const MCP_URL = process.env.MCP_PUBLIC_URL || "https://growthx-mcp.vercel.app/api/mcp";
+const WIDGET_META = {
+  ui: { prefersBorder: true, domain: `${createHash("sha256").update(MCP_URL).digest("hex").slice(0, 32)}.claudemcpcontent.com` },
+};
 
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
 
@@ -111,9 +119,9 @@ const handler = createMcpHandler(
     server.registerResource(
       "growthx-events-widget",
       EVENTS_UI_URI,
-      { title: "GrowthX events widget", description: "Event cards for recommend_events / plan_my_week", mimeType: MCP_APP_MIME },
+      { title: "GrowthX events widget", description: "Event cards for GrowthX event tools", mimeType: MCP_APP_MIME, _meta: WIDGET_META },
       async (uri) => ({
-        contents: [{ uri: uri.href, mimeType: MCP_APP_MIME, text: eventsWidgetHtml(), _meta: { ui: { prefersBorder: true } } }],
+        contents: [{ uri: uri.href, mimeType: MCP_APP_MIME, text: eventsWidgetHtml(), _meta: WIDGET_META }],
       }),
     );
     server.registerResource(
