@@ -1,36 +1,14 @@
-// MCP Apps (io.modelcontextprotocol/ui) widget for recommend_events / plan_my_week.
-// Self-contained HTML: no external assets. Also served as an OpenAI Apps SDK (skybridge) template.
+// MCP Apps (io.modelcontextprotocol/ui) widget for GrowthX event tools.
+// Same black agenda design as lib/agendaHtml.ts (PDF + inline artifact). Skybridge uses the same HTML.
+
+import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
 export const EVENTS_UI_URI = "ui://growthx/events.html";
 export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
-const CSS = `
-:root{--g:#0f7a4a;--gd:#0a5c37;--gs:#e3f2e9;--bg:#f7f6f1;--ink:#1d2420;--mut:#5f6b64;--line:#e4e2da}
-*{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-.wrap{padding:14px;max-width:760px;margin:0 auto}
-header{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.brand{font-weight:700;color:var(--g);letter-spacing:.02em;font-size:12px;text-transform:uppercase}
-h1{font-size:16px;margin:2px 0 0;font-weight:650}
-.sub{color:var(--mut);font-size:12px}
-.list{display:grid;gap:10px}
-.card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--g);border-radius:10px;padding:12px 14px}
-.when{font-size:12px;font-weight:600;color:var(--gd);text-transform:uppercase;letter-spacing:.03em}
-.title{font-size:15px;font-weight:650;margin:2px 0 4px}
-.meta{color:var(--mut);font-size:13px;display:flex;flex-wrap:wrap;gap:4px 12px}
-.price{font-weight:600;color:var(--ink)}
-.why{margin:8px 0;padding:6px 10px;background:var(--gs);border-radius:6px;font-size:13px;color:var(--gd)}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
-.tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--gs);color:var(--gd)}
-.btns{display:flex;gap:8px;flex-wrap:wrap}
-button{font:inherit;font-size:13px;font-weight:600;border-radius:8px;padding:6px 12px;cursor:pointer;border:1px solid var(--g)}
-.pri{background:var(--g);color:#fff}.pri:hover{background:var(--gd)}
-.sec{background:#fff;color:var(--g)}.sec:hover{background:var(--gs)}
-.empty{color:var(--mut);padding:24px;text-align:center}
-@media (max-width:480px){.wrap{padding:10px}.card{padding:10px 12px}}
-`;
+const CSS = AGENDA_CSS + WIDGET_EXTRA_CSS;
 
 const JS = `
 (function(){
@@ -52,7 +30,6 @@ const JS = `
 
   function icsDate(iso){ return new Date(iso).toISOString().replace(/[-:]/g,"").replace(/\\.\\d{3}/,""); }
   function gcal(ev){
-    if(ev.calendar) return ev.calendar;
     if(!ev.start) return null;
     var end=ev.end||new Date(new Date(ev.start).getTime()+3600000).toISOString();
     var p=new URLSearchParams({action:"TEMPLATE",text:ev.title||"Event",dates:icsDate(ev.start)+"/"+icsDate(end),
@@ -69,51 +46,127 @@ const JS = `
     }
   }
 
-  function card(ev){
+  function renderAgenda(v){
+    root.textContent="";
+    var w=el("div","wrap");
+    w.appendChild(el("div","kicker","GrowthX \\u00b7 San Francisco"));
+    w.appendChild(el("h1","",v.title||"Your week in SF tech"));
+    w.appendChild(el("div","sub",v.subtitle||""));
+  if(v.days&&v.days.length){
+    var strip=el("div","strip");
+    v.days.forEach(function(day){
+      var d=el("div","day");
+      d.appendChild(el("div","dn",day.weekday));
+      d.appendChild(el("div","dd",day.date));
+      (day.lines||[]).forEach(function(ln){
+        var line=el("div","dl");
+        line.appendChild(document.createTextNode(ln.time+" \\u00b7 "+ln.title+" \\u00b7 "));
+        var r=el("span","r","#"+ln.rank);
+        line.appendChild(r);
+        d.appendChild(line);
+      });
+      strip.appendChild(d);
+    });
+    w.appendChild(strip);
+  }
+  var grid=el("div","grid");
+  if(!v.items||!v.items.length) grid.appendChild(el("div","empty","No matching events in this window."));
+  else v.items.forEach(function(it){
     var c=el("article","card");
-    c.appendChild(el("div","when",ev.when||ev.day||""));
-    c.appendChild(el("div","title",ev.title||"Untitled event"));
-    var m=el("div","meta");
-    var where=[ev.venue,ev.neighborhood].filter(Boolean).join(" \\u00b7 ");
-    if(where) m.appendChild(el("span","",where));
-    if(ev.host) m.appendChild(el("span","","Host: "+ev.host));
-    if(ev.price) m.appendChild(el("span","price",ev.price));
-    c.appendChild(m);
-    var why=ev.why||ev.fit||(ev.shared_tags&&ev.shared_tags.length?"Shared topics: "+ev.shared_tags.join(", "):"");
-    if(why) c.appendChild(el("div","why",why));
-    if(ev.tags&&ev.tags.length){ var t=el("div","tags"); ev.tags.slice(0,6).forEach(function(x){ t.appendChild(el("span","tag",x)); }); c.appendChild(t); }
-    var b=el("div","btns");
-    if(ev.url){ var r=el("button","pri","Register"); r.type="button"; r.onclick=function(){ openLink(ev.url); }; b.appendChild(r); }
-    var cal=gcal(ev);
-    if(cal){ var a=el("button","sec","Add to calendar"); a.type="button"; a.onclick=function(){ openLink(cal); }; b.appendChild(a); }
-    c.appendChild(b);
-    return c;
+    if(it.url){
+      var cov=document.createElement("a");
+      cov.className="cover"; cov.href=it.url; cov.target="_blank"; cov.rel="noopener";
+      if(it.cover) cov.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
+      c.appendChild(cov);
+    } else {
+      var cov2=el("div","cover");
+      if(it.cover) cov2.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
+      c.appendChild(cov2);
+    }
+    var body=el("div","body");
+    var row=el("div","row");
+    row.appendChild(el("span","pill",it.pill));
+    row.appendChild(el("span","badge","#"+it.rank));
+    body.appendChild(row);
+    body.appendChild(el("div","t",it.title));
+    if(it.meta) body.appendChild(el("div","m",it.meta));
+    if(it.why) body.appendChild(el("div","w",it.why));
+    var foot=el("div","f");
+    var tags=el("div","tags");
+    (it.tags||[]).forEach(function(t){ tags.appendChild(el("span","tag","#"+t)); });
+    foot.appendChild(tags);
+    if(it.url){
+      var reg=document.createElement("a");
+      reg.className="reg"; reg.href=it.url; reg.target="_blank"; reg.rel="noopener"; reg.textContent="Register on Luma \\u203a";
+      reg.onclick=function(e){ e.preventDefault(); openLink(it.url); };
+      foot.appendChild(reg);
+    }
+    body.appendChild(foot);
+    var btns=el("div","btns");
+    if(it.url){
+      var b1=el("button","btn pri","Register");
+      b1.type="button"; b1.onclick=function(){ openLink(it.url); };
+      btns.appendChild(b1);
+    }
+    var cal=gcal(it);
+    if(cal){
+      var b2=el("button","btn","Add to calendar");
+      b2.type="button"; b2.onclick=function(){ openLink(cal); };
+      btns.appendChild(b2);
+    }
+    body.appendChild(btns);
+    c.appendChild(body);
+    grid.appendChild(c);
+  });
+  w.appendChild(grid);
+  if(v.pdfUrl){
+    var pdfWrap=el("div","btns");
+    var pdf=el("button","btn","Download PDF");
+    pdf.type="button"; pdf.onclick=function(){ openLink(v.pdfUrl); };
+    pdfWrap.appendChild(pdf);
+    w.appendChild(pdfWrap);
+  }
+  var foot=el("div","foot");
+  foot.appendChild(el("span","", "growthx-mcp.vercel.app"));
+  foot.appendChild(el("span","", (v.from||"")+" \\u2013 "+(v.to||"")+" \\u00b7 times in PT"));
+  w.appendChild(foot);
+  root.appendChild(w);
+  reportSize();
   }
 
   function render(data){
     if(!data||typeof data!=="object") return;
-    var items=data.agenda||data.recommendations||data.results||data.similar||data.matches||data.events, heading;
+    if(data.agendaView) { renderAgenda(data.agendaView); return; }
+    var items=data.agenda||data.recommendations||data.results||data.similar||data.matches||data.events;
     if(!Array.isArray(items)){
-      if(data.event&&data.event.title){ items=[Object.assign({},data.event,{why:data.tldr})]; heading="Event brief"; }
-      else if(data.title&&data.start){ items=[data]; heading="Event"; }
+      if(data.event&&data.event.title) items=[Object.assign({},data.event,{why:data.tldr})];
+      else if(data.title&&data.start) items=[data];
       else return;
     }
-    if(!heading) heading=data.goal?("For: "+data.goal):data.agenda?"Your week":data.audience?("Sponsor fit: "+data.audience)
-      :data.similar?("Similar to: "+((data.event&&data.event.title)||"this event")):data.results?"Search results":"Recommended events";
-    root.textContent="";
-    var w=el("div","wrap"), h=el("header"), left=el("div");
-    left.appendChild(el("div","brand","GrowthX \\u00b7 SF events"));
-    left.appendChild(el("h1","",heading));
-    h.appendChild(left);
-    if(data.week&&data.week.start) h.appendChild(el("div","sub","Week "+data.week.start+" \\u2192 "+data.week.end));
-    else h.appendChild(el("div","sub",items.length+" pick"+(items.length===1?"":"s")));
-    w.appendChild(h);
-    var l=el("div","list");
-    if(!items.length) l.appendChild(el("div","empty","No matching events found."));
-    items.forEach(function(ev){ l.appendChild(card(ev)); });
-    w.appendChild(l);
-    root.appendChild(w);
-    reportSize();
+    var n=items.length, goal=data.goal||data.audience||"SF tech events";
+    renderAgenda({
+      title: goal,
+      subtitle: n+" pick"+(n===1?"":"s"),
+      from: (data.week&&data.week.start)||"",
+      to: (data.week&&data.week.end)||"",
+      pdfUrl: data.pdfUrl||"",
+      days: [],
+      items: items.map(function(ev,i){
+        return {
+          rank: ev.rank||i+1,
+          pill: ev.when||ev.day||"",
+          title: ev.title||"Untitled",
+          meta: [ev.venue,ev.host,ev.price].filter(Boolean).join(" \\u00b7 "),
+          why: ev.why||ev.fit||"",
+          tags: (ev.tags||[]).slice(0,3),
+          url: ev.url||"",
+          cover: ev.cover,
+          start: ev.start||"",
+          end: ev.end||"",
+          venue: ev.venue||""
+        };
+      })
+    });
   }
 
   function fromResult(r){
@@ -143,7 +196,6 @@ const JS = `
     else if(m.method==="ping"&&m.id!=null) window.parent.postMessage({jsonrpc:"2.0",id:m.id,result:{}},"*");
   });
 
-  // OpenAI Apps SDK fallback
   function fromOpenAI(){ try{ if(window.openai&&window.openai.toolOutput) render(window.openai.toolOutput); }catch(e){} }
   window.addEventListener("openai:set_globals",function(e){
     var g=e&&e.detail&&e.detail.globals;
@@ -152,7 +204,7 @@ const JS = `
   fromOpenAI();
 
   if(inHost&&!window.openai){
-    rpc("ui/initialize",{protocolVersion:"2026-01-26",appInfo:{name:"growthx-events",version:"0.1.0"},appCapabilities:{}})
+    rpc("ui/initialize",{protocolVersion:"2026-01-26",appInfo:{name:"growthx-events",version:"0.2.0"},appCapabilities:{}})
       .then(function(){ notify("ui/notifications/initialized",{}); },function(){ notify("ui/notifications/initialized",{}); });
   }
   if(window.ResizeObserver) new ResizeObserver(reportSize).observe(document.body);

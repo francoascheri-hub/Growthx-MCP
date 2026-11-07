@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { MAX_PDF_EVENTS, agendaUrl, buildAgenda } from "@/lib/agenda";
-import { agendaHtml } from "@/lib/agendaHtml";
+import { agendaHtml, agendaWidgetView } from "@/lib/agendaHtml";
 import * as t from "@/lib/tools";
 import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsWidgetHtml } from "@/lib/ui";
 
@@ -62,12 +62,13 @@ async function runUi(fn: () => Promise<unknown>, pdf: (data: Ev) => PdfOpts = ()
   try {
     const data = (await fn()) as Ev;
     const p = agendaParams(data, pdf(data));
-    const link = `Download your agenda (PDF): ${agendaUrl(ORIGIN, p)}\n${PDF_HINT}`;
+    const pdfHref = agendaUrl(ORIGIN, p);
+    const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}`;
     const agenda = await buildAgenda({ ...p, tool: p.tool ?? "plan", limit: MAX_PDF_EVENTS }, { imageBytes: false });
     const fallback = `${RENDER}\n\n\`\`\`html\n${agendaHtml(agenda)}\n\`\`\``;
     return {
       content: [{ type: "text" as const, text: link }, ...json(data).content, { type: "text" as const, text: fallback }],
-      structuredContent: data,
+      structuredContent: { ...data, pdfUrl: pdfHref, agendaView: agendaWidgetView(agenda, pdfHref) },
     };
   } catch (err) {
     return { ...json({ error: (err as Error).message }), isError: true };
