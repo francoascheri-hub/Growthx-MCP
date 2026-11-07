@@ -2,6 +2,7 @@
 
 A public MCP server that lets anyone add **GrowthX** (events discovery for SF founders and builders) to the agent they already use: Claude, Cursor or ChatGPT. You don't need another bot.
 
+- Production: https://growthx-mcp.vercel.app (MCP endpoint: https://growthx-mcp.vercel.app/api/mcp)
 - MCP endpoint (Streamable HTTP): `/api/mcp`
 - Landing page with copy-paste configs: `/`
 - Read-only. No accounts.
