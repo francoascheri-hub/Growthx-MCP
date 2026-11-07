@@ -1,6 +1,7 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import * as t from "@/lib/tools";
+import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsWidgetHtml } from "@/lib/ui";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -14,6 +15,25 @@ async function run(fn: () => Promise<unknown>) {
     return { ...json({ error: (err as Error).message }), isError: true };
   }
 }
+
+// Same text JSON as run(), plus structuredContent for MCP Apps / OpenAI Apps widgets.
+async function runUi(fn: () => Promise<unknown>) {
+  try {
+    const data = (await fn()) as Record<string, unknown>;
+    return { ...json(data), structuredContent: data };
+  } catch (err) {
+    return { ...json({ error: (err as Error).message }), isError: true };
+  }
+}
+
+const uiMeta = (invoking: string, invoked: string) => ({
+  ui: { resourceUri: EVENTS_UI_URI },
+  "ui/resourceUri": EVENTS_UI_URI,
+  "openai/outputTemplate": EVENTS_SKYBRIDGE_URI,
+  "openai/toolInvocation/invoking": invoking,
+  "openai/toolInvocation/invoked": invoked,
+  "openai/widgetAccessible": false,
+});
 
 const eventId = z.string().describe("Event id from search_events / recommend_events");
 const goal = z.string().min(3).describe("What you want out of SF events, e.g. 'raise a pre-seed for my AI agents startup'");
@@ -35,11 +55,37 @@ const handler = createMcpHandler(
       (a) => run(() => t.searchEvents(a)),
     );
     server.tool("get_event", "Full details for one event.", { event_id: eventId }, (a) => run(() => t.getEvent(a)));
-    server.tool(
+    server.registerResource(
+      "growthx-events-widget",
+      EVENTS_UI_URI,
+      { title: "GrowthX events widget", description: "Event cards for recommend_events / plan_my_week", mimeType: MCP_APP_MIME },
+      async (uri) => ({
+        contents: [{ uri: uri.href, mimeType: MCP_APP_MIME, text: eventsWidgetHtml(), _meta: { ui: { prefersBorder: true } } }],
+      }),
+    );
+    server.registerResource(
+      "growthx-events-widget-skybridge",
+      EVENTS_SKYBRIDGE_URI,
+      { title: "GrowthX events widget (OpenAI Apps)", mimeType: SKYBRIDGE_MIME },
+      async (uri) => ({
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: SKYBRIDGE_MIME,
+            text: eventsWidgetHtml(),
+            _meta: { "openai/widgetPrefersBorder": true, "openai/widgetDescription": "Cards for recommended SF events." },
+          },
+        ],
+      }),
+    );
+    server.registerTool(
       "recommend_events",
-      "Top events for a goal, each with a short 'why'.",
-      { goal, limit: z.number().int().min(1).max(10).optional() },
-      (a) => run(() => t.recommendEvents(a)),
+      {
+        description: "Top events for a goal, each with a short 'why'.",
+        inputSchema: { goal, limit: z.number().int().min(1).max(10).optional() },
+        _meta: uiMeta("Finding events for your goal…", "Recommended events"),
+      },
+      (a) => runUi(() => t.recommendEvents(a)),
     );
     server.tool(
       "draft_intro",
@@ -47,16 +93,19 @@ const handler = createMcpHandler(
       { event_id: eventId, goal, target: z.string().optional().describe("Person or org to write to; defaults to best match") },
       (a) => run(() => t.draftIntro(a)),
     );
-    server.tool(
+    server.registerTool(
       "plan_my_week",
-      "Non-conflicting agenda of events for a week (30-min buffer between events), ranked by goal.",
       {
-        goal,
-        week_start: z.string().optional().describe("Any date in the target week, YYYY-MM-DD; defaults to the next week with events"),
-        max_per_day: z.number().int().min(1).max(4).optional(),
-        max_events: z.number().int().min(1).max(15).optional(),
+        description: "Non-conflicting agenda of events for a week (30-min buffer between events), ranked by goal.",
+        inputSchema: {
+          goal,
+          week_start: z.string().optional().describe("Any date in the target week, YYYY-MM-DD; defaults to the next week with events"),
+          max_per_day: z.number().int().min(1).max(4).optional(),
+          max_events: z.number().int().min(1).max(15).optional(),
+        },
+        _meta: uiMeta("Planning your week…", "Your week of events"),
       },
-      (a) => run(() => t.planMyWeek(a)),
+      (a) => runUi(() => t.planMyWeek(a)),
     );
     server.tool("who_to_meet", "Who to meet at an event for your goal (guests, hosts, sponsors).", { event_id: eventId, goal }, (a) =>
       run(() => t.whoToMeet(a)),

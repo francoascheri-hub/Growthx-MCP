@@ -106,11 +106,57 @@ function scoreEvent(e: GxEvent, f: Filters): { score: number; reasons: string[] 
   return { score, reasons };
 }
 
+// Investor-intent boost + off-topic penalty, only for fundraising goals (other goals keep the base score).
+const INVESTOR_GOAL = /investor|\bvcs?\b|fundrais|\brais(e|ing)\b|\bseed\b|pre-seed|angel/i;
+const INVESTOR_SIGNALS: [string, RegExp][] = [
+  ["investors", /\binvestors?\b/i],
+  ["VC", /\bvcs?\b/i],
+  ["venture", /\bventures?\b/i],
+  ["capital", /\bcapital\b/i],
+  ["demo day", /\bdemo day\b/i],
+  ["pitch", /\bpitch/i],
+  ["fundraising", /\bfundrais/i],
+  ["angel", /\bangels?\b/i],
+  ["LP", /\blps?\b/i],
+  ["partners at", /\bpartners? at\b/i],
+  ["seed round", /\bseed round\b/i],
+];
+const OFF_TOPIC: [string, RegExp][] = [
+  ["visa", /\bvisas?\b/i],
+  ["immigration", /\bimmigra/i],
+  ["pickleball", /pickleball/i],
+  ["yoga", /\byoga\b/i],
+  ["run club", /\brun(ning)? club\b/i],
+  ["wine", /\bwine\b/i],
+  ["dating", /\bdating\b/i],
+  ["real estate", /\breal estate\b/i],
+  ["crypto", /\bcrypto|\btrading\b/i],
+];
+
+function investorAdjust(e: GxEvent, goal: string): { score: number; reasons: string[] } {
+  if (!INVESTOR_GOAL.test(goal)) return { score: 0, reasons: [] };
+  const rest = `${e.description} ${e.host} ${(e.communities ?? []).join(" ")}`;
+  const inTitle = INVESTOR_SIGNALS.filter(([, re]) => re.test(e.title)).map(([k]) => k);
+  const inRest = INVESTOR_SIGNALS.filter(([k, re]) => !inTitle.includes(k) && re.test(rest)).map(([k]) => k);
+  let score = Math.min(inTitle.length, 3) * 4 + Math.min(inRest.length, 4);
+  const reasons = inTitle.length + inRest.length ? [`investor signals: ${[...inTitle, ...inRest].slice(0, 4).join(", ")}`] : [];
+  const off = OFF_TOPIC.filter(([k, re]) => !goal.toLowerCase().includes(k) && re.test(`${e.title} ${e.description}`));
+  if (off.length) {
+    score -= off.some(([, re]) => re.test(e.title)) ? 12 : 4;
+    reasons.push(`off-topic for this goal: ${off.map(([k]) => k).join(", ")}`);
+  }
+  return { score, reasons };
+}
+
 async function rank(goal: string, pool?: GxEvent[]) {
   const filters = await goalToFilters(goal);
   const events = pool ?? (await getEvents());
   const ranked = events
-    .map((e) => ({ e, ...scoreEvent(e, filters) }))
+    .map((e) => {
+      const base = scoreEvent(e, filters);
+      const adj = investorAdjust(e, goal);
+      return { e, score: base.score + adj.score, reasons: [...base.reasons, ...adj.reasons] };
+    })
     .sort((a, b) => b.score - a.score || a.e.start.localeCompare(b.e.start));
   return { filters, ranked };
 }
@@ -147,7 +193,16 @@ export async function getEvent(args: { event_id: string }) {
 
 export async function recommendEvents(args: { goal: string; limit?: number }) {
   const { filters, ranked } = await rank(args.goal);
-  const top = ranked.slice(0, args.limit ?? 3);
+  // Diversity: skip events that look like the same series as one already picked (same host or 3+ shared title words).
+  const top: typeof ranked = [];
+  for (const r of ranked) {
+    if (top.length >= (args.limit ?? 3)) break;
+    const words = keywordsOf(r.e.title);
+    const dup = top.some(
+      (t) => t.e.host === r.e.host || keywordsOf(t.e.title).filter((w) => words.includes(w)).length >= 3,
+    );
+    if (!dup) top.push(r);
+  }
   let why = top.map((r) =>
     r.reasons.length ? `Good fit because ${r.reasons.join("; ")}.` : "Closest upcoming match; few explicit signals.",
   );
