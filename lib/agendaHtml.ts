@@ -41,6 +41,8 @@ a.reg:hover{text-decoration:underline}
 `;
 
 export const WIDGET_EXTRA_CSS = `
+.body .w{flex:0 1 auto}
+.f{margin-top:8px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:10px}
 .btn{font:inherit;font-size:13px;font-weight:500;border-radius:999px;padding:6px 14px;cursor:pointer;border:1px solid #95bf47;background:transparent;color:#95bf47;text-decoration:none;display:inline-block}
 .btn:hover{background:#1a2a0e}
