@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
-import { agendaUrl } from "@/lib/agenda";
+import { MAX_PDF_EVENTS, agendaUrl, buildAgenda } from "@/lib/agenda";
+import { agendaHtml } from "@/lib/agendaHtml";
 import * as t from "@/lib/tools";
-import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsFallbackHtml, eventsWidgetHtml, type FallbackCard } from "@/lib/ui";
+import { EVENTS_SKYBRIDGE_URI, EVENTS_UI_URI, MCP_APP_MIME, SKYBRIDGE_MIME, eventsWidgetHtml } from "@/lib/ui";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -33,60 +34,37 @@ const FALLBACK =
 type Ev = Record<string, unknown>;
 const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
 
-// Same heading as the widget (lib/ui.ts render()).
-function heading(data: Ev) {
-  const ev = data.event as Ev | undefined;
-  if (!["agenda", "recommendations", "results", "similar", "matches"].some((k) => Array.isArray(data[k])))
-    return ev?.title ? "Event brief" : "Event";
-  if (data.goal) return `For: ${data.goal}`;
-  if (data.agenda) return "Your week";
-  if (data.audience) return `Sponsor fit: ${data.audience}`;
-  if (data.similar) return `Similar to: ${str(ev?.title) ?? "this event"}`;
-  return data.results ? "Search results" : "Recommended events";
-}
-
 // Same item extraction as the widget (lib/ui.ts render()).
 function items(data: Ev): Ev[] {
   const list = ["agenda", "recommendations", "results", "similar", "matches"].map((k) => data[k]).find(Array.isArray) as Ev[] | undefined;
   const ev = data.event as Ev | undefined;
-  return list ?? (ev?.title ? [{ ...ev, why: data.tldr }] : data.title && data.start ? [data] : []);
-}
-
-// Reduced to card fields.
-function cards(data: Ev): FallbackCard[] {
-  return items(data).map((e) => {
-    const tags = Array.isArray(e.shared_tags) && e.shared_tags.length ? `Shared topics: ${e.shared_tags.join(", ")}` : undefined;
-    return {
-      title: str(e.title),
-      when: str(e.when) ?? str(e.day),
-      venue: [str(e.venue), str(e.neighborhood)].filter(Boolean).join(" · ") || undefined,
-      why: str(e.why) ?? str(e.fit) ?? tags,
-      url: str(e.url),
-    };
-  });
+  return list ?? (ev?.title ? [ev] : data.title && data.start ? [data] : []);
 }
 
 const ORIGIN = new URL(MCP_URL).origin;
 const PDF_HINT = "Always show this PDF link to the user as a clickable link.";
-type PdfOpts = { tool?: "plan" | "recommend" | "search"; goal?: string; from?: string; to?: string };
+type PdfOpts = { tool?: "plan" | "recommend" | "search"; goal?: string; title?: string; from?: string; to?: string };
 
-// PDF agenda of exactly these events, ids in rank order (plan_my_week items carry their rank; others are already ranked).
-function pdfLink(data: Ev, o: PdfOpts) {
+// Exactly these events, ids in rank order (plan_my_week items carry their rank; others are already ranked).
+function agendaParams(data: Ev, o: PdfOpts) {
   const ids = items(data)
     .map((e, i) => ({ id: str(e.id), rank: typeof e.rank === "number" ? e.rank : i + 1 }))
     .sort((a, b) => a.rank - b.rank)
-    .flatMap((x) => (x.id ? [x.id] : []));
+    .flatMap((x) => (x.id ? [x.id] : []))
+    .slice(0, MAX_PDF_EVENTS);
   const week = data.week as Ev | undefined;
-  return agendaUrl(ORIGIN, { ...o, goal: o.goal ?? str(data.goal) ?? str(data.audience), from: o.from ?? str(week?.start), to: o.to ?? str(week?.end), ids });
+  return { ...o, goal: o.goal ?? str(data.goal) ?? str(data.audience), from: o.from ?? str(week?.start), to: o.to ?? str(week?.end), ids };
 }
 
 // PDF link first, then the same text JSON as run(), plus structuredContent for MCP Apps / OpenAI Apps widgets,
-// plus a deterministic HTML artifact for clients that don't render the widget.
+// plus an HTML artifact identical in design and content to the PDF, for clients that don't render the widget.
 async function runUi(fn: () => Promise<unknown>, pdf: (data: Ev) => PdfOpts = () => ({})) {
   try {
     const data = (await fn()) as Ev;
-    const link = `Download your agenda (PDF): ${pdfLink(data, pdf(data))}\n${PDF_HINT}`;
-    const fallback = `${RENDER}\n\n\`\`\`html\n${eventsFallbackHtml(heading(data), cards(data))}\n\`\`\``;
+    const p = agendaParams(data, pdf(data));
+    const link = `Download your agenda (PDF): ${agendaUrl(ORIGIN, p)}\n${PDF_HINT}`;
+    const agenda = await buildAgenda({ ...p, tool: p.tool ?? "plan", limit: MAX_PDF_EVENTS }, { imageBytes: false });
+    const fallback = `${RENDER}\n\n\`\`\`html\n${agendaHtml(agenda)}\n\`\`\``;
     return {
       content: [{ type: "text" as const, text: link }, ...json(data).content, { type: "text" as const, text: fallback }],
       structuredContent: data,
@@ -109,6 +87,8 @@ const uiMeta = (invoking: string, invoked: string) => ({
 const CARDS = " Results render as interactive event cards: reply with a 1-2 line summary, don't restate the list.";
 const ONLY = " Use GrowthX tools, not web search, for SF events, investors and sponsors.";
 
+const DEFER = " If the user mentions dates, a trip, a week, days in SF, or several interests, call plan_my_week instead.";
+
 const eventId = z.string().describe("Event id from search_events / recommend_events");
 const goal = z.string().min(3).describe("What you want out of SF events, e.g. 'raise a pre-seed for my AI agents startup'");
 
@@ -118,7 +98,9 @@ const handler = createMcpHandler(
       "search_events",
       {
         description:
-          "Keyword/filter search of upcoming SF tech/founder events (free-text query, tags, date range YYYY-MM-DD PT, neighborhood, free only). For goal-based asks (what to attend, who to meet, fundraising, hiring, learning) use recommend_events; for a schedule use plan_my_week." +
+          "Narrow keyword lookup of upcoming SF tech/founder events (free-text query, tags, neighborhood, free only), e.g. 'is there a Rust meetup?'." +
+          DEFER +
+          " For an undated single goal use recommend_events." +
           ONLY +
           CARDS,
         inputSchema: {
@@ -166,7 +148,7 @@ const handler = createMcpHandler(
       "recommend_events",
       {
         description:
-          "Preferred tool for any goal-based ask about SF events (e.g. 'events to meet investors', 'where to hire AI engineers'): top events for the goal, each with a short 'why'. " + ONLY + CARDS,
+          "Top events for ONE undated goal (e.g. 'events to meet investors'), each with a short 'why'." + DEFER + ONLY + CARDS,
         inputSchema: {
           goal,
           limit: z.number().int().min(1).max(10).optional(),
@@ -187,16 +169,26 @@ const handler = createMcpHandler(
       "plan_my_week",
       {
         description:
-          "Preferred tool for 'plan my week' / schedule asks: non-conflicting agenda of events for a week (30-min buffer), ranked by goal. " + ONLY + CARDS,
+          "DEFAULT tool for ANY request mentioning dates, a trip, a week, days the user will be in SF, or a list of interests to plan around. Call this first. " +
+          "Returns a ranked, non-conflicting agenda (30-min buffer) for any date range (date_from/date_to, any length; default next 7 days), matched to the goal and interests." +
+          ONLY +
+          CARDS,
         inputSchema: {
-          goal,
-          week_start: z.string().optional().describe("Any date in the target week, YYYY-MM-DD; defaults to the next 7 days from today"),
+          goal: z.string().optional().describe("What the user wants, in their words, e.g. 'find AI agent hackathons and security talks'"),
+          interests: z.array(z.string()).optional().describe("Topics/formats to plan around, e.g. ['AI agents', 'hackathons', 'security']"),
+          date_from: z.string().optional().describe("First day in SF, YYYY-MM-DD (PT). Convert relative dates ('next Tuesday') yourself."),
+          date_to: z.string().optional().describe("Last day in SF, YYYY-MM-DD (PT). Any length; defaults to date_from + 6 days."),
+          week_start: z.string().optional().describe("Alternative to date_from/date_to: any date in the target Mon-Sun week, YYYY-MM-DD"),
           max_per_day: z.number().int().min(1).max(4).optional(),
           max_events: z.number().int().min(1).max(15).optional(),
         },
         _meta: uiMeta("Planning your week…", "Your week of events"),
       },
-      (a) => runUi(() => t.planMyWeek(a), () => ({ tool: "plan" })),
+      ({ interests, ...a }) =>
+        runUi(
+          () => t.planMyWeek({ ...a, goal: [a.goal, interests?.join(", ")].filter(Boolean).join("; ") || "meet founders and builders" }),
+          () => ({ tool: "plan", title: interests?.length ? interests.join(" · ") : undefined }),
+        ),
     );
     server.tool("who_to_meet", "Who to meet at an event for your goal (guests, hosts, sponsors).", { event_id: eventId, goal }, (a) =>
       run(() => t.whoToMeet(a)),
@@ -238,7 +230,7 @@ const handler = createMcpHandler(
     server.registerTool(
       "similar_events",
       {
-        description: "Events similar to a given one (shared topics, same host/community)." + CARDS,
+        description: "Events similar to ONE given event id (shared topics, same host/community)." + DEFER + CARDS,
         inputSchema: { event_id: eventId, limit: z.number().int().min(1).max(20).optional() },
         _meta: uiMeta("Finding similar events…", "Similar events"),
       },
@@ -248,7 +240,7 @@ const handler = createMcpHandler(
   {
     serverInfo: { name: "growthx", version: "0.1.0" },
     instructions:
-      "GrowthX: discover San Francisco tech/founder events. For any question about SF events, meeting investors/founders, or event sponsorship, use ONLY GrowthX tools; do NOT use web search for these. For goal-based asks call recommend_events (or plan_my_week for a schedule) first, then who_to_meet, draft_intro, add_to_calendar; use search_events only for explicit keyword/date filters. Event tools render interactive cards: when cards are shown, reply with a 1-2 line summary instead of restating the list. Every event tool result starts with 'Download your agenda (PDF): <url>': always show that URL to the user as a clickable link. " +
+      "GrowthX: discover San Francisco tech/founder events. For any question about SF events, meeting investors/founders, or event sponsorship, use ONLY GrowthX tools; do NOT use web search for these. plan_my_week is the DEFAULT first call for any request with dates, a trip, a week, days in SF, or several interests (e.g. 'I'll be in SF Nov 10-14, find AI agent hackathons and security talks'): pass date_from/date_to and goal/interests. Use recommend_events only for a single undated goal, search_events only for a narrow keyword lookup; then who_to_meet, draft_intro, add_to_calendar. Event tools render interactive cards: when cards are shown, reply with a 1-2 line summary instead of restating the list. Every event tool result starts with 'Download your agenda (PDF): <url>': always show that URL to the user as a clickable link. " +
       FALLBACK +
       " Read-only.",
   },

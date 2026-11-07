@@ -7,13 +7,14 @@ import type { GxEvent } from "./types";
 export type AgendaQuery = {
   tool: "plan" | "recommend" | "search";
   goal?: string;
+  title?: string;
   from?: string;
   to?: string;
   limit: number;
   ids?: string[];
 };
 
-export type AgendaItem = { rank: number; e: GxEvent; why: string; image?: { data: Buffer; format: "jpg" | "png" } };
+export type AgendaItem = { rank: number; e: GxEvent; why: string; cover?: string; image?: { data: Buffer; format: "jpg" | "png" } };
 export type Agenda = { title: string; from: string; to: string; total: number; items: AgendaItem[] };
 
 export const MAX_PDF_EVENTS = 8;
@@ -32,6 +33,7 @@ export function parseQuery(sp: URLSearchParams): AgendaQuery {
   return {
     tool: tool === "recommend" || tool === "search" ? tool : "plan",
     goal: sp.get("goal")?.trim().slice(0, 200) || undefined,
+    title: sp.get("title")?.trim().slice(0, 120) || undefined,
     from: date("from"),
     to: date("to"),
     limit: Math.min(MAX_PDF_EVENTS, Math.max(1, Number(sp.get("limit")) || 6)),
@@ -40,10 +42,11 @@ export function parseQuery(sp: URLSearchParams): AgendaQuery {
 }
 
 /** Absolute PDF link for a tool result: pins the exact events (ids, in rank order) and the date window. */
-export function agendaUrl(origin: string, p: { tool?: string; goal?: string; ids: string[]; from?: string; to?: string }) {
+export function agendaUrl(origin: string, p: { tool?: string; goal?: string; title?: string; ids: string[]; from?: string; to?: string }) {
   const sp = new URLSearchParams();
   if (p.tool) sp.set("tool", p.tool);
   if (p.goal) sp.set("goal", p.goal.slice(0, 200));
+  if (p.title) sp.set("title", p.title.slice(0, 120));
   if (p.from) sp.set("from", p.from);
   if (p.to) sp.set("to", p.to);
   if (p.ids.length) sp.set("ids", p.ids.slice(0, MAX_PDF_EVENTS).join(","));
@@ -92,37 +95,50 @@ function whyFor(e: GxEvent, reasons: string[], rank: number): string {
   return `${words.slice(0, 20).join(" ").replace(/[;,:]$/, "")}.`;
 }
 
-// og:image from the Luma page, cached per warm instance; any failure -> no image.
+// og:image from the Luma page (URL for HTML, bytes for PDF), cached per warm instance; any failure -> no image.
+const coverCache = new Map<string, string | null>();
 const imageCache = new Map<string, AgendaItem["image"] | null>();
 
 async function fetchWithTimeout(url: string, ms: number, accept: string) {
   return fetch(url, { headers: { accept, "user-agent": "Mozilla/5.0 (GrowthX agenda)" }, signal: AbortSignal.timeout(ms) });
 }
 
-async function coverImage(pageUrl: string): Promise<AgendaItem["image"]> {
+async function coverUrl(pageUrl: string): Promise<string | undefined> {
   if (!/^https?:\/\//.test(pageUrl)) return undefined;
-  if (imageCache.has(pageUrl)) return imageCache.get(pageUrl) ?? undefined;
-  let img: AgendaItem["image"] | null = null;
+  if (coverCache.has(pageUrl)) return coverCache.get(pageUrl) ?? undefined;
+  let src: string | null = null;
   try {
     const html = await (await fetchWithTimeout(pageUrl, 3000, "text/html")).text();
     const m =
       html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-    if (m) {
-      const src = m[1].replace(/&amp;/g, "&").replace(/format=auto/, "format=jpg");
-      const res = await fetchWithTimeout(src, 4000, "image/jpeg,image/png");
-      const type = res.headers.get("content-type") ?? "";
-      const format = /png/.test(type) ? "png" : /jpe?g/.test(type) ? "jpg" : null;
-      if (res.ok && format) img = { data: Buffer.from(await res.arrayBuffer()), format };
-    }
+    const u = m?.[1].replace(/&amp;/g, "&").replace(/format=auto/, "format=jpg");
+    // Safe to embed in CSS url('...') and HTML attributes.
+    if (u && /^https:\/\/[^\s'"()<>\\]+$/.test(u)) src = u;
+  } catch {
+    src = null;
+  }
+  coverCache.set(pageUrl, src);
+  return src ?? undefined;
+}
+
+async function coverImage(src: string | undefined): Promise<AgendaItem["image"]> {
+  if (!src) return undefined;
+  if (imageCache.has(src)) return imageCache.get(src) ?? undefined;
+  let img: AgendaItem["image"] | null = null;
+  try {
+    const res = await fetchWithTimeout(src, 4000, "image/jpeg,image/png");
+    const type = res.headers.get("content-type") ?? "";
+    const format = /png/.test(type) ? "png" : /jpe?g/.test(type) ? "jpg" : null;
+    if (res.ok && format) img = { data: Buffer.from(await res.arrayBuffer()), format };
   } catch {
     img = null;
   }
-  imageCache.set(pageUrl, img);
+  imageCache.set(src, img);
   return img ?? undefined;
 }
 
-export async function buildAgenda(q: AgendaQuery): Promise<Agenda> {
+export async function buildAgenda(q: AgendaQuery, opts: { imageBytes?: boolean } = { imageBytes: true }): Promise<Agenda> {
   const today = laDate(new Date().toISOString());
   let from = q.from ?? today;
   let to = q.to ?? addDays(from, 6);
@@ -151,10 +167,11 @@ export async function buildAgenda(q: AgendaQuery): Promise<Agenda> {
   picked = picked.filter((e) => laDate(e.start) >= from && laDate(e.start) <= to).slice(0, MAX_PDF_EVENTS);
 
   const reasons = q.goal ? await reasonsFor(q.goal, picked) : new Map<string, string[]>();
-  const images = await Promise.all(picked.map((e) => coverImage(e.url)));
+  const covers = await Promise.all(picked.map((e) => coverUrl(e.url)));
+  const images = opts.imageBytes ? await Promise.all(covers.map((c) => coverImage(c))) : [];
   const items = picked
-    .map((e, i) => ({ rank: i + 1, e, why: whyFor(e, reasons.get(e.id) ?? [], i + 1), image: images[i] }))
+    .map((e, i) => ({ rank: i + 1, e, why: whyFor(e, reasons.get(e.id) ?? [], i + 1), cover: covers[i], image: images[i] }))
     .sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
   const total = (await getEvents()).filter((e) => laDate(e.start) >= from && laDate(e.start) <= to).length;
-  return { title: q.goal ?? "Your week in SF tech", from, to, total, items };
+  return { title: q.title ?? q.goal ?? "Your week in SF tech", from, to, total, items };
 }
