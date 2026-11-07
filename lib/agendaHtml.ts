@@ -19,17 +19,17 @@ h1{font-size:clamp(30px,5vw,48px);font-weight:200;line-height:1.08;margin-top:10
 .dd{font-size:22px;font-weight:200;margin:2px 0 8px}
 .dl{font-size:12px;color:#d8d8d8;margin-bottom:6px;line-height:1.3}
 .r{color:#95bf47;font-weight:500}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:24px}
-.card{background:#0e0e0e;border:1px solid #262626;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:24px;align-items:stretch}
+.card{background:#0e0e0e;border:1px solid #262626;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;height:100%}
 .cover{display:block;height:120px;background:linear-gradient(135deg,#95bf47,#2f4a14) center/cover no-repeat}
 .body{padding:12px 14px 14px;display:flex;flex-direction:column;flex:1}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .pill{font-size:11px;font-weight:500;color:#000;background:#95bf47;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .badge{font-size:12px;font-weight:500;color:#95bf47;border:1px solid #95bf47;border-radius:999px;padding:0 8px}
-.t{font-size:17px;font-weight:300;line-height:1.25;margin-top:10px}
+.t{font-size:17px;font-weight:300;line-height:1.25;margin-top:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .m{font-size:12px;color:#9a9a9a;margin-top:5px}
-.w{font-size:13px;color:#e6e6e6;margin-top:8px;line-height:1.4}
-.f{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:10px}
+.w{font-size:13px;color:#e6e6e6;margin-top:8px;line-height:1.4;flex:1}
+.f{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
 .tags{display:flex;flex-wrap:wrap;gap:4px}
 .tag{font-size:10px;color:#95bf47;border:1px solid #3a4a20;border-radius:999px;padding:1px 7px}
 a.reg{font-size:13px;font-weight:500;color:#95bf47;text-decoration:none;white-space:nowrap}
@@ -41,7 +41,7 @@ a.reg:hover{text-decoration:underline}
 `;
 
 export const WIDGET_EXTRA_CSS = `
-.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-top:4px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:10px}
 .btn{font:inherit;font-size:13px;font-weight:500;border-radius:999px;padding:6px 14px;cursor:pointer;border:1px solid #95bf47;background:transparent;color:#95bf47;text-decoration:none;display:inline-block}
 .btn:hover{background:#1a2a0e}
 .btn.pri{background:#95bf47;color:#000;border-color:#95bf47}
@@ -97,7 +97,7 @@ export function agendaWidgetView(a: Agenda, pdfUrl: string): AgendaWidgetView {
     return {
       rank: it.rank,
       pill: `${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} · ${time(e.start)} PT`,
-      title: short(cleanTitle(e.title), 80),
+      title: cleanTitle(e.title),
       meta: short(meta, 90),
       why: it.why,
       tags: e.tags.slice(0, 3),
@@ -166,4 +166,15 @@ export function agendaHtml(a: Agenda): string {
     `<div class="sub">Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}</div>${body}` +
     `<div class="foot"><span>growthx-mcp.vercel.app</span><span>${esc(`${a.from} – ${a.to}`)} · times in PT</span></div></div></body></html>`
   );
+}
+
+
+export function plainAgendaList(a: Agenda): string {
+  return a.items
+    .map((it) => {
+      const e = it.e;
+      const when = `${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} ${time(e.start)} PT`;
+      return `#${it.rank} ${when} — ${cleanTitle(e.title)}`;
+    })
+    .join("\n");
 }

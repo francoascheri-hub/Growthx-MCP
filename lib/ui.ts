@@ -3,10 +3,38 @@
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events-v2.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v2.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v3.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v3.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
+
+/** Luma og:image hosts (verified via lu.ma pages in data/events.json) plus our PDF origin. */
+export const WIDGET_CSP_RESOURCE_DOMAINS = [
+  "https://images.lumacdn.com",
+  "https://og.luma.com",
+  "https://cdn.lu.ma",
+  "https://social-images.lu.ma",
+  "https://growthx-mcp.vercel.app",
+] as const;
+
+export const WIDGET_CSP_CONNECT_DOMAINS = [
+  "https://growthx-mcp.vercel.app",
+  "https://lu.ma",
+  "https://luma.com",
+  "https://calendar.google.com",
+] as const;
+
+export const WIDGET_UI_CSP = {
+  resourceDomains: [...WIDGET_CSP_RESOURCE_DOMAINS],
+  connectDomains: [...WIDGET_CSP_CONNECT_DOMAINS],
+};
+
+export const WIDGET_OPENAI_CSP = {
+  resource_domains: [...WIDGET_CSP_RESOURCE_DOMAINS],
+  connect_domains: [...WIDGET_CSP_CONNECT_DOMAINS],
+  redirect_domains: ["https://lu.ma", "https://luma.com", "https://calendar.google.com", "https://growthx-mcp.vercel.app"],
+};
+
 
 const CSS = AGENDA_CSS + WIDGET_EXTRA_CSS;
 
@@ -94,14 +122,7 @@ const JS = `
     var foot=el("div","f");
     var tags=el("div","tags");
     (it.tags||[]).forEach(function(t){ tags.appendChild(el("span","tag","#"+t)); });
-    foot.appendChild(tags);
-    if(it.url){
-      var reg=document.createElement("a");
-      reg.className="reg"; reg.href=it.url; reg.target="_blank"; reg.rel="noopener"; reg.textContent="Register on Luma \\u203a";
-      reg.onclick=function(e){ e.preventDefault(); openLink(it.url); };
-      foot.appendChild(reg);
-    }
-    body.appendChild(foot);
+    if((it.tags||[]).length){ foot.appendChild(tags); body.appendChild(foot); }
     var btns=el("div","btns");
     if(it.url){
       var b1=el("button","btn pri","Register");
