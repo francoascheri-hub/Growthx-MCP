@@ -92,11 +92,11 @@ export function agendaWidgetView(a: Agenda, pdfUrl: string): AgendaWidgetView {
   const items = a.items.map((it) => {
     const e = it.e;
     const host = realHost(e.host);
-    const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" · ");
+    const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" Â· ");
     const url = /^https?:\/\//.test(e.url) ? e.url : "";
     return {
       rank: it.rank,
-      pill: `${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} · ${time(e.start)} PT`,
+      pill: `${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} Â· ${time(e.start)} PT`,
       title: cleanTitle(e.title),
       meta: short(meta, 90),
       why: it.why,
@@ -123,17 +123,17 @@ function card(it: AgendaItem): string {
   const e = it.e;
   const url = /^https?:\/\//.test(e.url) ? esc(e.url) : "";
   const host = realHost(e.host);
-  const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" · ");
+  const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" Â· ");
   const coverStyle = it.cover ? ` style="background-image:url('${esc(it.cover)}'),linear-gradient(135deg,#95bf47,#2f4a14)"` : "";
   const cover = url ? `<a class="cover" href="${url}" target="_blank" rel="noopener"${coverStyle}></a>` : `<div class="cover"${coverStyle}></div>`;
   const tags = e.tags.slice(0, 3).map((t) => `<span class="tag">#${esc(t)}</span>`).join("");
   return (
     `<article class="card">${cover}<div class="body">` +
-    `<div class="row"><span class="pill">${esc(`${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} · ${time(e.start)} PT`)}</span><span class="badge">#${it.rank}</span></div>` +
+    `<div class="row"><span class="pill">${esc(`${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} Â· ${time(e.start)} PT`)}</span><span class="badge">#${it.rank}</span></div>` +
     `<div class="t">${esc(short(cleanTitle(e.title), 80))}</div>` +
     (meta ? `<div class="m">${esc(short(meta, 90))}</div>` : "") +
     `<div class="w">${esc(it.why)}</div>` +
-    `<div class="f"><div class="tags">${tags}</div>${url ? `<a class="reg" href="${url}" target="_blank" rel="noopener">Register on Luma ›</a>` : ""}</div>` +
+    `<div class="f"><div class="tags">${tags}</div>${url ? `<a class="reg" href="${url}" target="_blank" rel="noopener">Register on Luma â€º</a>` : ""}</div>` +
     `</div></article>`
   );
 }
@@ -152,7 +152,7 @@ export function agendaHtml(a: Agenda): string {
       (d) =>
         `<div class="day"><div class="dn">${esc(fmt(d.items[0].e.start, { weekday: "short" }))}</div><div class="dd">${esc(fmt(d.items[0].e.start, { month: "short", day: "numeric" }))}</div>` +
         d.items
-          .map((it) => `<div class="dl">${esc(`${time(it.e.start)} · ${short(cleanTitle(it.e.title).replace(/\s*\([^)]*\)/g, ""), 34)}`)} · <span class="r">#${it.rank}</span></div>`)
+          .map((it) => `<div class="dl">${esc(`${time(it.e.start)} Â· ${short(cleanTitle(it.e.title).replace(/\s*\([^)]*\)/g, ""), 34)}`)} Â· <span class="r">#${it.rank}</span></div>`)
           .join("") +
         `</div>`,
     )
@@ -162,9 +162,9 @@ export function agendaHtml(a: Agenda): string {
     : `<div class="empty">No matching events in this window. Try a broader goal or dates.</div>`;
   return (
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${AGENDA_CSS}</style></head>` +
-    `<body><div class="wrap"><div class="kicker">GrowthX · San Francisco</div><h1>${esc(short(sentenceCase(a.title), 90))}</h1>` +
+    `<body><div class="wrap"><div class="kicker">GrowthX Â· San Francisco</div><h1>${esc(short(sentenceCase(a.title), 90))}</h1>` +
     `<div class="sub">Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}</div>${body}` +
-    `<div class="foot"><span>growthx-mcp.vercel.app</span><span>${esc(`${a.from} – ${a.to}`)} · times in PT</span></div></div></body></html>`
+    `<div class="foot"><span>growthx-mcp.vercel.app</span><span>${esc(`${a.from} â€“ ${a.to}`)} Â· times in PT</span></div></div></body></html>`
   );
 }
 
@@ -174,7 +174,7 @@ export function plainAgendaList(a: Agenda): string {
     .map((it) => {
       const e = it.e;
       const when = `${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} ${time(e.start)} PT`;
-      return `#${it.rank} ${when} — ${cleanTitle(e.title)}`;
+      return `#${it.rank} ${when} â€” ${cleanTitle(e.title)}`;
     })
     .join("\n");
 }
