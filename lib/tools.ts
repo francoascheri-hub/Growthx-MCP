@@ -161,6 +161,14 @@ async function rank(goal: string, pool?: GxEvent[]) {
   return { filters, ranked };
 }
 
+/** Ranking reasons for specific events (used by the PDF agenda). */
+export async function reasonsFor(goal: string, events: GxEvent[]): Promise<Map<string, string[]>> {
+  const { ranked } = await rank(goal, events);
+  return new Map(ranked.map((r) => [r.e.id, r.reasons]));
+}
+
+const inWindow = (e: GxEvent, from?: string, to?: string) => (!from || laDate(e.start) >= from) && (!to || laDate(e.start) <= to);
+
 // ---------- tools ----------
 
 export async function searchEvents(args: {
@@ -191,8 +199,9 @@ export async function getEvent(args: { event_id: string }) {
   return { ...e, when: laLabel(e.start) };
 }
 
-export async function recommendEvents(args: { goal: string; limit?: number }) {
-  const { filters, ranked } = await rank(args.goal);
+export async function recommendEvents(args: { goal: string; limit?: number; date_from?: string; date_to?: string }) {
+  const pool = args.date_from || args.date_to ? (await getEvents()).filter((e) => inWindow(e, args.date_from, args.date_to)) : undefined;
+  const { filters, ranked } = await rank(args.goal, pool);
   // Diversity: skip events that look like the same series as one already picked (same host or 3+ shared title words).
   const top: typeof ranked = [];
   for (const r of ranked) {
@@ -294,16 +303,22 @@ function mondayOf(date: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-export async function planMyWeek(args: { goal: string; week_start?: string; max_per_day?: number; max_events?: number }) {
+export async function planMyWeek(args: {
+  goal: string;
+  week_start?: string;
+  date_from?: string;
+  date_to?: string;
+  max_per_day?: number;
+  max_events?: number;
+}) {
   const events = await getEvents();
   const today = laDate(new Date().toISOString());
   const now = Date.now();
-  const firstUpcoming = events.find((e) => new Date(e.start).getTime() >= now) ?? events[0];
-  // week_start given: that calendar week (Mon-Sun). Otherwise: the next 7 days from the first upcoming event.
-  const start = args.week_start ? mondayOf(args.week_start) : firstUpcoming ? laDate(firstUpcoming.start) : today;
+  // date_from/date_to: that window. week_start: that calendar week (Mon-Sun). Otherwise: the next 7 days.
+  const start = args.date_from ?? (args.week_start ? mondayOf(args.week_start) : today);
   const endD = new Date(`${start}T12:00:00Z`);
   endD.setUTCDate(endD.getUTCDate() + 6);
-  const end = endD.toISOString().slice(0, 10);
+  const end = args.date_to ?? endD.toISOString().slice(0, 10);
   const pool = events.filter(
     (e) => laDate(e.start) >= start && laDate(e.start) <= end && (args.week_start || new Date(e.start).getTime() >= now),
   );
@@ -323,12 +338,14 @@ export async function planMyWeek(args: { goal: string; week_start?: string; max_
     if (chosen.filter((c) => laDate(c.e.start) === laDate(r.e.start)).length >= perDay) continue;
     chosen.push(r);
   }
-  chosen.sort((a, b) => a.e.start.localeCompare(b.e.start));
+  const rankOf = new Map(chosen.map((c, i) => [c.e.id, i + 1]));
+  chosen.sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
   return {
     goal: args.goal,
     week: { start, end },
     agenda: chosen.map((r) => ({
       day: laLabel(r.e.start).split(",")[0],
+      rank: rankOf.get(r.e.id),
       ...summarize(r.e),
       why: r.reasons.join("; ") || "general fit",
       calendar: googleCalendarUrl(r.e),
