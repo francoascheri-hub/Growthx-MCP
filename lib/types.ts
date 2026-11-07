@@ -25,6 +25,7 @@ export type GxEvent = {
   sponsors_wanted: boolean;
   sponsor_tiers?: { name: string; price_usd: number; perks: string }[];
   sponsors?: string[]; // companies that sponsored this event (intel graph)
+  community_sponsors?: string[]; // companies that sponsored the hosting communities (intel graph)
   communities?: string[]; // communities hosting/listing this event (intel graph)
   registered?: number;
   source: "growthx-intel" | "fixtures" | "luma";

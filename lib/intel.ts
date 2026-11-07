@@ -61,8 +61,18 @@ const KEYWORDS: Record<string, RegExp> = {
   security: /\b(security|safety|trust)\b/i,
 };
 
+const TAG_SYNONYMS: Record<string, string> = {
+  "developer tools": "devtools", "developer-tools": "devtools", hackathons: "hackathon", "artificial intelligence": "ai",
+  "machine learning": "ai", "open source": "open-source", startups: "founders", startup: "founders", networking: "community",
+};
+
+function normalizeTag(t: string): string {
+  const s = t.trim().toLowerCase();
+  return TAG_SYNONYMS[s] ?? s.replace(/\s+/g, "-");
+}
+
 export function deriveTags(text: string, base: string[] = []): string[] {
-  const tags = new Set(base.map((t) => t.toLowerCase()));
+  const tags = new Set(base.map(normalizeTag).filter(Boolean));
   for (const [tag, re] of Object.entries(KEYWORDS)) if (re.test(text)) tags.add(tag);
   return [...tags].slice(0, 8);
 }
@@ -102,10 +112,11 @@ function toEvent(row: Row, rels: Rel[], cityName: string): GxEvent {
   const guests = Array.isArray(f.featured_guests) ? (f.featured_guests as { name?: string; title_or_bio_short?: string | null }[]) : [];
   const attendees: Attendee[] = guests.slice(0, 8).map((g) => ({
     name: str(g.name),
-    role: str(g.title_or_bio_short) || "Featured guest",
+    role: str(g.title_or_bio_short).slice(0, 140) || "Featured guest",
     company: "",
-    interests: tags,
+    interests: g.title_or_bio_short ? deriveTags(str(g.title_or_bio_short)) : [],
   }));
+  const communitySponsors = rels.filter((r) => r.predicate === "community_sponsor").map((r) => r.name);
   const cap = f.capacity as { total?: number | null } | undefined;
   const reg = f.registered_count as { count?: number } | undefined;
   const start = str(f.start_at);
@@ -126,8 +137,9 @@ function toEvent(row: Row, rels: Rel[], cityName: string): GxEvent {
     capacity: Number(cap?.total ?? 0) || 0,
     price: price(f),
     attendees,
-    sponsors_wanted: sponsors.length > 0,
+    sponsors_wanted: sponsors.length > 0 || communitySponsors.length > 0,
     sponsors,
+    community_sponsors: communitySponsors.length ? [...new Set(communitySponsors)].slice(0, 10) : undefined,
     communities,
     registered: reg?.count,
     source: "growthx-intel",
@@ -170,7 +182,11 @@ export async function loadIntelEvents(opts: { city?: string; days?: number; limi
          from intel.relations r where r.object_id = any($1::uuid[]) and r.predicate in ('hosts','lists','sponsored')
          union all
          select r.subject_id, r.predicate, r.object_id from intel.relations r
-         where r.subject_id = any($1::uuid[]) and r.predicate = 'held_at'),
+         where r.subject_id = any($1::uuid[]) and r.predicate = 'held_at'
+         union all
+         select c.object_id, 'community_sponsor', s.subject_id
+         from intel.relations c join intel.relations s on s.object_id = c.subject_id and s.predicate = 'sponsored'
+         where c.object_id = any($1::uuid[]) and c.predicate in ('hosts','lists')),
        names as (
          select distinct on (o.entity_id, o.field) o.entity_id, o.field, o.value #>> '{}' v from intel.observations o
          where o.entity_id in (select other from r) and o.field in ('name','neighborhood')

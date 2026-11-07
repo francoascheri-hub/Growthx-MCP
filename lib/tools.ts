@@ -242,12 +242,16 @@ function mondayOf(date: string): string {
 export async function planMyWeek(args: { goal: string; week_start?: string; max_per_day?: number; max_events?: number }) {
   const events = await getEvents();
   const today = laDate(new Date().toISOString());
-  const firstUpcoming = events.find((e) => laDate(e.start) >= today) ?? events[0];
-  const start = mondayOf(args.week_start ?? (firstUpcoming ? laDate(firstUpcoming.start) : today));
+  const now = Date.now();
+  const firstUpcoming = events.find((e) => new Date(e.start).getTime() >= now) ?? events[0];
+  // week_start given: that calendar week (Mon-Sun). Otherwise: the next 7 days from the first upcoming event.
+  const start = args.week_start ? mondayOf(args.week_start) : firstUpcoming ? laDate(firstUpcoming.start) : today;
   const endD = new Date(`${start}T12:00:00Z`);
   endD.setUTCDate(endD.getUTCDate() + 6);
   const end = endD.toISOString().slice(0, 10);
-  const pool = events.filter((e) => laDate(e.start) >= start && laDate(e.start) <= end);
+  const pool = events.filter(
+    (e) => laDate(e.start) >= start && laDate(e.start) <= end && (args.week_start || new Date(e.start).getTime() >= now),
+  );
   const { ranked } = await rank(args.goal, pool);
   const perDay = args.max_per_day ?? 2;
   const maxEvents = args.max_events ?? 6;
@@ -296,6 +300,7 @@ export async function eventBrief(args: { event_id: string }) {
     hosts: e.host,
     communities: e.communities?.length ? e.communities : undefined,
     sponsors: e.sponsors?.length ? e.sponsors : undefined,
+    community_sponsors: e.community_sponsors,
     featured_people: e.attendees.slice(0, 6).map((a) => `${a.name} (${a.role}${a.company ? `, ${a.company}` : ""})`),
     talking_points: e.tags.slice(0, 4).map((t) => `What's working (and not) in ${t} right now`),
     prep: ["Register early (capacity is limited)", "Have a 1-line intro ready", "Pick 2 people from featured_people/hosts to find", "Follow up within 24h"],
@@ -353,13 +358,14 @@ export async function sponsorMatch(args: { audience: string; budget?: number; li
         fit: r.reasons.join("; "),
         reach: r.e.registered ?? (r.e.capacity || undefined),
         past_sponsors: r.e.sponsors?.length ? r.e.sponsors : undefined,
+        community_sponsors: r.e.community_sponsors,
         open_to_sponsors: r.e.sponsors_wanted || Boolean(r.e.sponsors?.length),
         tiers_in_budget: tiers.length ? tiers : undefined,
         next_step: tiers.length ? `Contact ${r.e.host} for the ${tiers[0].name} tier.` : `Ask ${r.e.host} about sponsorship options.`,
         _rank: r.score + (r.e.sponsors_wanted || r.e.sponsors?.length ? 2 : 0) + (tiers.length ? 1 : 0),
       };
     })
-    .filter((m) => args.budget == null || m.tiers_in_budget || !m.open_to_sponsors || m.past_sponsors)
+    .filter((m) => args.budget == null || m.tiers_in_budget || !m.open_to_sponsors || m.past_sponsors || m.community_sponsors)
     .sort((a, b) => b._rank - a._rank)
     .slice(0, args.limit ?? 5)
     .map(({ _rank, ...m }) => ({ ...m, score: Number(_rank.toFixed(1)) }));
