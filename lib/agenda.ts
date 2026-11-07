@@ -50,26 +50,46 @@ export function agendaUrl(origin: string, p: { tool?: string; goal?: string; ids
   return `${origin}/api/agenda.pdf?${sp.toString()}`;
 }
 
-// Raw ranking signals ("topics match: ai, founders; audience: investors") -> one human sentence.
-function humanWhy(reasons: string[]): string {
-  const list = (s: string) => {
-    const xs = s.split(/,\s*/).filter(Boolean).slice(0, 3);
-    return xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : (xs[0] ?? "");
+// One specific sentence per event from its own signals: format, host, investor terms, audience, topics, price.
+const FORMATS: [string, RegExp][] = [
+  ["pitch night", /\bpitch(es|ing)?\b/i],
+  ["demo night", /\bdemo (night|day)\b/i],
+  ["hackathon", /\b(hack|build)athon\b/i],
+  ["breakfast", /\b(breakfast|brunch)\b/i],
+  ["dinner", /\bdinner\b/i],
+  ["happy hour", /\bhappy hour\b/i],
+  ["fireside chat", /\bfireside\b/i],
+  ["panel", /\bpanel\b/i],
+  ["workshop", /\bworkshop\b/i],
+  ["summit", /\b(summit|conference)\b/i],
+  ["mixer", /\b(mixer|networking)\b/i],
+  ["meetup", /\bmeetup\b/i],
+];
+
+function whyFor(e: GxEvent, reasons: string[], rank: number): string {
+  const sig = (key: string) => {
+    const r = reasons.find((x) => x.startsWith(`${key}:`) || x.startsWith(`${key} `));
+    return r ? r.slice(key.length).replace(/^:?\s*/, "").split(/,\s*/).filter(Boolean) : [];
   };
-  const parts: string[] = [];
-  let mentions = "";
-  for (const r of reasons) {
-    const [k, v = ""] = r.split(/:\s*/, 2);
-    if (k === "topics match") parts.push(`it's squarely about ${list(v)}`);
-    else if (k === "audience") parts.push(`the room skews ${list(v)}`);
-    else if (k === "investor signals") parts.push(`there are real investor signals (${list(v)})`);
-    else if (r.startsWith("mentions ")) mentions = r.slice(9);
-    else if (/relevant attendee/.test(r)) parts.push(`people you'd want to meet are going, like ${r.split("e.g. ")[1] ?? "several founders"}`);
-  }
-  if (!parts.length && mentions) parts.push(`it touches on ${list(mentions)}`);
-  if (!parts.length) return "One of the closest upcoming matches for what you're after.";
-  const s = parts.length > 1 ? `${parts.slice(0, -1).join(", ")}, and ${parts[parts.length - 1]}` : parts[0];
-  return `Worth it because ${s}.`;
+  const and = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}` : (xs[0] ?? ""));
+  const inv = sig("investor signals").slice(0, 2);
+  const aud = sig("audience").slice(0, 2);
+  const topics = sig("topics match").slice(0, 2);
+  const format =
+    FORMATS.find(([, re]) => re.test(e.title))?.[0] ?? FORMATS.find(([, re]) => re.test(e.description.slice(0, 600)))?.[0] ?? "event";
+  const host = /see event page|^tba$|unknown/i.test(e.host) ? "" : e.host.split(/,|\s&\s|\sx\s/i)[0].trim().split(/\s+/).slice(0, 4).join(" ");
+  const lead = `${format.charAt(0).toUpperCase()}${format.slice(1)}${host ? ` by ${host}` : ""}`;
+  const v = rank % 3;
+  const hook = inv.length
+    ? [`with ${and(inv)} on the agenda`, `expect ${and(inv)} in the room`, `strong investor presence (${and(inv)})`][v]
+    : aud.length
+      ? [`a room of ${and(aud)}`, `mostly ${and(aud)} attend`, `built for ${and(aud)}`][v] + (topics.length ? `, on ${and(topics)}` : "")
+      : topics.length
+        ? [`focused on ${and(topics)}`, `deep on ${and(topics)}`, `all about ${and(topics)}`][v]
+        : "a close match for your goal";
+  const price = /free/i.test(e.price) ? "free" : e.price ? `${e.price} ticket` : "";
+  const words = `${lead}: ${hook}${price ? `; ${price}` : ""}`.split(/\s+/);
+  return `${words.slice(0, 20).join(" ").replace(/[;,:]$/, "")}.`;
 }
 
 // og:image from the Luma page, cached per warm instance; any failure -> no image.
@@ -133,7 +153,7 @@ export async function buildAgenda(q: AgendaQuery): Promise<Agenda> {
   const reasons = q.goal ? await reasonsFor(q.goal, picked) : new Map<string, string[]>();
   const images = await Promise.all(picked.map((e) => coverImage(e.url)));
   const items = picked
-    .map((e, i) => ({ rank: i + 1, e, why: humanWhy(reasons.get(e.id) ?? []), image: images[i] }))
+    .map((e, i) => ({ rank: i + 1, e, why: whyFor(e, reasons.get(e.id) ?? [], i + 1), image: images[i] }))
     .sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
   const total = (await getEvents()).filter((e) => laDate(e.start) >= from && laDate(e.start) <= to).length;
   return { title: q.goal ?? "Your week in SF tech", from, to, total, items };
