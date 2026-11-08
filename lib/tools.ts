@@ -1,5 +1,6 @@
 import { dataStatus, getEventById, getEvents } from "./data";
 import { deriveTags } from "./intel";
+import { MIN_RELEVANCE, bestTopic, cleanDescription, topicsOf } from "./relevance";
 import { completeJSON, completeText, llmProvider } from "./llm";
 import { laDate, laLabel } from "./time";
 import type { GxEvent } from "./types";
@@ -59,20 +60,6 @@ const GOAL_EXPANSIONS: [RegExp, string[]][] = [
   [/hackat|buildathon/i, ["hackathon", "devtools"]],
 ];
 
-// A goal keyword also matches its synonyms (counted once), so "security" finds infosec/cyber/appsec events.
-const KEYWORD_SYNONYMS: Record<string, string[]> = {
-  security: ["security", "infosec", "cyber", "appsec", "devsecops", "pentest", "red team", "threat", "privacy", "zero trust"],
-  seguridad: ["security", "infosec", "cyber", "seguridad"],
-  infosec: ["security", "infosec", "cyber", "appsec"],
-  cybersecurity: ["security", "infosec", "cyber"],
-  hackathon: ["hackathon", "hack night", "buildathon", "hack day"],
-  hackathons: ["hackathon", "hack night", "buildathon", "hack day"],
-  agent: ["agent", "agentic"],
-  agents: ["agent", "agentic"],
-  investors: ["investor", "venture", "angel"],
-  inversores: ["investor", "venture", "angel"],
-};
-
 export async function goalToFilters(goal: string): Promise<Filters & { via: "llm" | "rules" }> {
   const tags = new Set(deriveTags(goal));
   for (const [re, extra] of GOAL_EXPANSIONS) if (re.test(goal)) extra.forEach((t) => tags.add(t));
@@ -99,8 +86,9 @@ function scoreEvent(e: GxEvent, f: Filters): { score: number; reasons: string[] 
     score += tagHits.length * 3;
     reasons.push(`topics match: ${tagHits.join(", ")}`);
   }
-  const hay = `${e.title} ${e.description} ${e.host}`.toLowerCase();
-  const kwHits = f.keywords.filter((k) => (KEYWORD_SYNONYMS[k] ?? [k]).some((a) => hay.includes(a)));
+  // Title + description only (organizer/sponsor names removed), never host or location.
+  const hay = `${e.title} ${cleanDescription(e)}`.toLowerCase();
+  const kwHits = f.keywords.filter((k) => hay.includes(k));
   if (kwHits.length) {
     score += kwHits.length * 2;
     reasons.push(`mentions ${kwHits.slice(0, 4).join(", ")}`);
@@ -151,7 +139,7 @@ const OFF_TOPIC: [string, RegExp][] = [
 
 function investorAdjust(e: GxEvent, goal: string): { score: number; reasons: string[] } {
   if (!INVESTOR_GOAL.test(goal)) return { score: 0, reasons: [] };
-  const rest = `${e.description} ${e.host} ${(e.communities ?? []).join(" ")}`;
+  const rest = cleanDescription(e);
   const inTitle = INVESTOR_SIGNALS.filter(([, re]) => re.test(e.title)).map(([k]) => k);
   const inRest = INVESTOR_SIGNALS.filter(([k, re]) => !inTitle.includes(k) && re.test(rest)).map(([k]) => k);
   let score = Math.min(inTitle.length, 3) * 4 + Math.min(inRest.length, 4);
@@ -164,17 +152,31 @@ function investorAdjust(e: GxEvent, goal: string): { score: number; reasons: str
   return { score, reasons };
 }
 
+// When the goal names topics (security, hackathons, agents…), only events that are actually about one of them
+// (title mention, or 2+ description mentions) are eligible: no padding with unrelated events.
 async function rank(goal: string, pool?: GxEvent[]) {
   const filters = await goalToFilters(goal);
+  const topics = topicsOf(goal);
   const events = pool ?? (await getEvents());
   const ranked = events
     .map((e) => {
+      const topic = topics.length ? bestTopic(e, topics) : null;
+      if (topic && topic.score < MIN_RELEVANCE) return null;
       const base = scoreEvent(e, filters);
       const adj = investorAdjust(e, goal);
-      return { e, score: base.score + adj.score, reasons: [...base.reasons, ...adj.reasons] };
+      const reasons = [...(topic ? [`topics match: ${topic.topic}`] : []), ...base.reasons, ...adj.reasons];
+      return { e, score: base.score + adj.score + (topic ? topic.score * 2 : 0), reasons: [...new Set(reasons)] };
     })
+    .filter((r): r is { e: GxEvent; score: number; reasons: string[] } => r !== null)
     .sort((a, b) => b.score - a.score || a.e.start.localeCompare(b.e.start));
-  return { filters, ranked };
+  return { filters, ranked, topics };
+}
+
+/** "Only 2 events match security." when a topic ask returns fewer than requested. */
+function shortfall(topics: string[], n: number, wanted: number): string | undefined {
+  if (!topics.length || n >= wanted) return undefined;
+  const what = topics.join(" / ");
+  return n ? `Only ${n} ${n === 1 ? "event matches" : "events match"} ${what}.` : `No events match ${what} in this window.`;
 }
 
 /** Ranking reasons for specific events (used by the PDF agenda). */
@@ -192,6 +194,7 @@ export async function searchEvents(args: {
 }) {
   const events = await getEvents();
   const kws = args.query ? keywordsOf(args.query) : [];
+  const topics = args.query ? topicsOf(args.query) : [];
   const tags = (args.tags ?? []).map((t) => t.toLowerCase());
   const results = events
     .filter((e) => !args.date_from || laDate(e.start) >= args.date_from)
@@ -199,15 +202,17 @@ export async function searchEvents(args: {
     .filter((e) => !args.neighborhood || `${e.neighborhood} ${e.venue}`.toLowerCase().includes(args.neighborhood.toLowerCase()))
     .filter((e) => !args.free_only || /free/i.test(e.price))
     .filter((e) => !tags.length || tags.some((t) => e.tags.includes(t)))
+    .filter((e) => !topics.length || (bestTopic(e, topics)?.score ?? 0) >= MIN_RELEVANCE)
     .map((e) => {
-      const hay = `${e.title} ${e.description} ${e.host} ${e.tags.join(" ")}`.toLowerCase();
-      return { e, hits: kws.filter((k) => hay.includes(k)).length };
+      const hay = `${e.title} ${cleanDescription(e)} ${e.tags.join(" ")}`.toLowerCase();
+      return { e, hits: kws.filter((k) => hay.includes(k)).length + (topics.length ? (bestTopic(e, topics)?.score ?? 0) : 0) };
     })
     .filter((x) => !kws.length || x.hits > 0)
     .sort((a, b) => b.hits - a.hits || a.e.start.localeCompare(b.e.start))
     .slice(0, args.limit ?? 10)
     .map((x) => summarize(x.e));
-  return { ...(await dataStatus()), count: results.length, results };
+  const note = shortfall(topics, results.length, args.limit ?? 10);
+  return { ...(await dataStatus()), count: results.length, ...(note ? { note } : {}), results };
 }
 
 export async function getEvent(args: { event_id: string }) {
@@ -217,7 +222,7 @@ export async function getEvent(args: { event_id: string }) {
 
 export async function recommendEvents(args: { goal: string; limit?: number; date_from?: string; date_to?: string }) {
   const pool = args.date_from || args.date_to ? (await getEvents()).filter((e) => inWindow(e, args.date_from, args.date_to)) : undefined;
-  const { filters, ranked } = await rank(args.goal, pool);
+  const { filters, ranked, topics } = await rank(args.goal, pool);
   // Diversity: skip events that look like the same series as one already picked (same host or 3+ shared title words).
   const top: typeof ranked = [];
   for (const r of ranked) {
@@ -241,6 +246,7 @@ export async function recommendEvents(args: { goal: string; limit?: number; date
   return {
     goal: args.goal,
     filters_used: filters,
+    ...(shortfall(topics, top.length, args.limit ?? 3) ? { note: shortfall(topics, top.length, args.limit ?? 3) } : {}),
     recommendations: top.map((r, i) => ({ ...summarize(r.e), score: Number(r.score.toFixed(1)), why: why[i] })),
   };
 }
@@ -340,7 +346,7 @@ export async function planMyWeek(args: {
   const pool = events.filter(
     (e) => laDate(e.start) >= start && laDate(e.start) <= end && (args.week_start || new Date(e.start).getTime() >= now),
   );
-  const { ranked } = await rank(args.goal, pool);
+  const { ranked, topics } = await rank(args.goal, pool);
   const perDay = args.max_per_day ?? 2;
   const maxEvents = args.max_events ?? 6;
   const chosen: typeof ranked = [];
@@ -387,6 +393,7 @@ export async function planMyWeek(args: {
       why: r.reasons.join("; ") || "general fit",
       calendar: googleCalendarUrl(r.e),
     })),
+    ...(shortfall(topics, chosen.length, maxEvents) ? { note: shortfall(topics, chosen.length, maxEvents) } : {}),
     skipped_conflicts: skipped.slice(0, 5),
     candidates_considered: pool.length,
   };

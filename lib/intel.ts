@@ -59,7 +59,7 @@ const KEYWORDS: Record<string, RegExp> = {
   hiring: /\b(hiring|recruit|career|job)/i,
   community: /\b(community|networking|happy hour|mixer|social|meetup)\b/i,
   security:
-    /\b(security|safety|trust|infosec|cyber ?security|cyber|appsec|devsecops|pentest(ing)?|red team(ing)?|threat|privacy|zero trust|soc ?2|seguridad|ciberseguridad)\b/i,
+    /\b(cyber ?security|infosec|appsec|application security|ai security|devsecops|pentest(ing)?|red team(ing)?|zero trust|soc ?2|cisos?|security (engineer|team|leader|research)s?|ciberseguridad)\b/i,
 };
 
 const TAG_SYNONYMS: Record<string, string> = {

@@ -71,6 +71,12 @@ const plan = await call(
   (d) => Array.isArray(d.agenda) && typeof d.pdfUrl === "string",
 );
 
+// Relevance: topic asks match title/description only (never the host), no padding with unrelated events.
+const noGolf = (list) => Array.isArray(list) && !list.some((e) => /golf/i.test(e.title));
+await call("recommend_events", { goal: "cybersecurity", limit: 8 }, (d) => noGolf(d.recommendations));
+await call("plan_my_week", { goal: "cybersecurity", interests: ["cybersecurity"] }, (d) => noGolf(d.agenda));
+await call("search_events", { query: "cybersecurity", limit: 10 }, (d) => noGolf(d.results));
+
 const readOnly = tools.filter((t) => t.annotations?.readOnlyHint !== true).map((t) => t.name);
 if (readOnly.length) {
   failures++;

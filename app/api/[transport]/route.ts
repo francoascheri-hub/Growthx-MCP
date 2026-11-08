@@ -67,8 +67,8 @@ async function runUi(fn: () => Promise<unknown>, pdf: (data: Ev) => PdfOpts = ()
     const data = (await fn()) as Ev;
     const p = agendaParams(data, pdf(data));
     const pdfHref = agendaUrl(ORIGIN, p);
-    const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}
-${FINAL}`;
+    const note = str(data.note) ? `\n${str(data.note)} Tell the user this in one line; do not pad with unrelated events.` : "";
+    const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}\n${FINAL}${note}`;
     const agenda = await buildAgenda({ ...p, tool: p.tool ?? "plan", limit: MAX_PDF_EVENTS }, { imageBytes: false });
     const list = plainAgendaList(agenda);
     const summary = list ? `Events (widget also shown):\n${list}` : "";
