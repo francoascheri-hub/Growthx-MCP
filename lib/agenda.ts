@@ -14,7 +14,15 @@ export type AgendaQuery = {
   ids?: string[];
 };
 
-export type AgendaItem = { rank: number; e: GxEvent; why: string; cover?: string; image?: { data: Buffer; format: "jpg" | "png" } };
+export type AgendaItem = {
+  rank: number;
+  e: GxEvent;
+  why: string;
+  /** Rank of a higher-ranked event this one overlaps (30-min buffer), if any. */
+  overlapsWith?: number;
+  /** "Investors: … · Sponsors: …" from intel, if any. */
+  people?: string;
+  cover?: string; image?: { data: Buffer; format: "jpg" | "png" } };
 export type Agenda = { title: string; from: string; to: string; total: number; items: AgendaItem[] };
 
 export const MAX_PDF_EVENTS = 8;
@@ -138,6 +146,19 @@ async function coverImage(src: string | undefined): Promise<AgendaItem["image"]>
   return img ?? undefined;
 }
 
+const INVESTOR = /\b(investor|vc|venture|capital|angel|general partner|managing partner|gp|fund)\b/i;
+
+/** Investors attending and sponsors, from intel data; undefined when there's nothing to show. */
+function peopleOf(e: GxEvent): string | undefined {
+  const inv = e.attendees
+    .filter((a) => a.name && INVESTOR.test(`${a.role} ${a.company}`))
+    .slice(0, 3)
+    .map((a) => (a.company ? `${a.name} (${a.company})` : a.name));
+  const sp = [...(e.sponsors ?? [])].slice(0, 3);
+  const parts = [inv.length ? `Investors: ${inv.join(", ")}` : "", sp.length ? `Sponsors: ${sp.join(", ")}` : ""].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
 export async function buildAgenda(q: AgendaQuery, opts: { imageBytes?: boolean } = { imageBytes: true }): Promise<Agenda> {
   const today = laDate(new Date().toISOString());
   let from = q.from ?? today;
@@ -172,6 +193,15 @@ export async function buildAgenda(q: AgendaQuery, opts: { imageBytes?: boolean }
   const items = picked
     .map((e, i) => ({ rank: i + 1, e, why: whyFor(e, reasons.get(e.id) ?? [], i + 1), cover: covers[i], image: images[i] }))
     .sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
+  const ms = (iso: string) => new Date(iso).getTime();
+  const BUF = 30 * 60_000;
+  for (const it of items) {
+    const clash = items
+      .filter((o) => o.rank < it.rank && ms(o.e.start) < ms(it.e.end) + BUF && ms(it.e.start) < ms(o.e.end) + BUF)
+      .sort((a, b) => a.rank - b.rank)[0];
+    if (clash) Object.assign(it, { overlapsWith: clash.rank });
+    Object.assign(it, { people: peopleOf(it.e) });
+  }
   const total = (await getEvents()).filter((e) => laDate(e.start) >= from && laDate(e.start) <= to).length;
   return { title: q.title ?? q.goal ?? "Your week in SF tech", from, to, total, items };
 }

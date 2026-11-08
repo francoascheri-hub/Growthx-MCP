@@ -7,7 +7,9 @@ export const maxDuration = 60;
 // GET /api/agenda.pdf?tool=plan|recommend|search&goal=&from=YYYY-MM-DD&to=YYYY-MM-DD&limit<=8[&ids=a,b,c]
 export async function GET(req: Request) {
   try {
-    const pdf = await renderAgendaPdf(await buildAgenda(parseQuery(new URL(req.url).searchParams)));
+    const url = new URL(req.url);
+    const ics = `${url.origin}/api/agenda.ics${url.search}`;
+    const pdf = await renderAgendaPdf(await buildAgenda(parseQuery(url.searchParams)), ics);
     return new Response(new Uint8Array(pdf), {
       headers: {
         "content-type": "application/pdf",

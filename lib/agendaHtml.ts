@@ -21,7 +21,12 @@ h1{font-size:clamp(30px,5vw,48px);font-weight:200;line-height:1.08;margin-top:10
 .r{color:#95bf47;font-weight:500}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-top:24px;align-items:stretch}
 .card{background:#0e0e0e;border:1px solid #262626;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;height:100%}
-.cover{display:block;height:120px;background:linear-gradient(135deg,#95bf47,#2f4a14) center/cover no-repeat}
+.cover{display:block;position:relative;height:120px;overflow:hidden;background:linear-gradient(135deg,#000 0%,#14200a 55%,#95bf47 140%)}
+.ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:200;color:#95bf47}
+.cimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.ov{font-size:11px;font-weight:500;color:#000;background:#f0b429;border-radius:999px;padding:1px 8px;margin-top:8px;align-self:flex-start}
+.pp{font-size:12px;color:#cfe3a8;margin-top:6px}
+a.cal{display:inline-block;margin-top:14px;font-size:13px;font-weight:500;color:#000;background:#95bf47;border-radius:999px;padding:6px 14px;text-decoration:none}
 .body{padding:12px 14px 14px;display:flex;flex-direction:column;flex:1}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .pill{font-size:11px;font-weight:500;color:#000;background:#95bf47;border-radius:999px;padding:2px 9px;white-space:nowrap}
@@ -56,6 +61,7 @@ export type AgendaWidgetView = {
   from: string;
   to: string;
   pdfUrl: string;
+  icsUrl: string;
   days: { weekday: string; date: string; lines: { time: string; title: string; rank: number }[] }[];
   items: {
     rank: number;
@@ -66,6 +72,9 @@ export type AgendaWidgetView = {
     tags: string[];
     url: string;
     cover?: string;
+    initial: string;
+    overlapsWith?: number;
+    people?: string;
     start: string;
     end: string;
     venue: string;
@@ -105,6 +114,9 @@ export function agendaWidgetView(a: Agenda, pdfUrl: string): AgendaWidgetView {
       tags: e.tags.slice(0, 3),
       url,
       cover: it.cover,
+      initial: initialOf(e.title),
+      overlapsWith: it.overlapsWith,
+      people: it.people,
       start: e.start,
       end: e.end,
       venue: e.venue,
@@ -116,31 +128,41 @@ export function agendaWidgetView(a: Agenda, pdfUrl: string): AgendaWidgetView {
     from: a.from,
     to: a.to,
     pdfUrl,
+    icsUrl: icsUrlFor(pdfUrl),
     days,
     items,
   };
 }
+
+/** Same query as the PDF link, served as a whole-agenda .ics calendar. */
+export const icsUrlFor = (pdfUrl: string) => pdfUrl.replace("/api/agenda.pdf", "/api/agenda.ics");
+
+/** Letter shown on the generic GrowthX cover when an event has no (or a broken) image. */
+export const initialOf = (title: string) => (cleanTitle(title).match(/[\p{L}\p{N}]/u)?.[0] ?? "G").toUpperCase();
 
 function card(it: AgendaItem): string {
   const e = it.e;
   const url = /^https?:\/\//.test(e.url) ? esc(e.url) : "";
   const host = realHost(e.host);
   const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" · ");
-  const coverStyle = it.cover ? ` style="background-image:url('${esc(it.cover)}'),linear-gradient(135deg,#95bf47,#2f4a14)"` : "";
-  const cover = url ? `<a class="cover" href="${url}" target="_blank" rel="noopener"${coverStyle}></a>` : `<div class="cover"${coverStyle}></div>`;
+  // Generic GrowthX cover (initial on gradient) underneath; the Luma image covers it and removes itself if it fails.
+  const inner = `<span class="ini">${esc(initialOf(e.title))}</span>${it.cover ? `<img class="cimg" src="${esc(it.cover)}" alt="" onerror="this.remove()">` : ""}`;
+  const cover = url ? `<a class="cover" href="${url}" target="_blank" rel="noopener">${inner}</a>` : `<div class="cover">${inner}</div>`;
   const tags = e.tags.slice(0, 3).map((t) => `<span class="tag">#${esc(t)}</span>`).join("");
   return (
     `<article class="card">${cover}<div class="body">` +
     `<div class="row"><span class="pill">${esc(`${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} · ${time(e.start)} PT`)}</span><span class="badge">#${it.rank}</span></div>` +
     `<div class="t">${esc(short(cleanTitle(e.title), 80))}</div>` +
     (meta ? `<div class="m">${esc(short(meta, 90))}</div>` : "") +
+    (it.overlapsWith ? `<span class="ov">Overlaps with #${it.overlapsWith}</span>` : "") +
     `<div class="w">${esc(it.why)}</div>` +
+    (it.people ? `<div class="pp">${esc(it.people)}</div>` : "") +
     `<div class="f"><div class="tags">${tags}</div>${url ? `<a class="reg" href="${url}" target="_blank" rel="noopener">Register on Luma ›</a>` : ""}</div>` +
     `</div></article>`
   );
 }
 
-export function agendaHtml(a: Agenda): string {
+export function agendaHtml(a: Agenda, icsUrl?: string): string {
   const days: { key: string; items: AgendaItem[] }[] = [];
   for (const it of a.items) {
     const key = laDate(it.e.start);
@@ -165,7 +187,9 @@ export function agendaHtml(a: Agenda): string {
   return (
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${AGENDA_CSS}</style></head>` +
     `<body><div class="wrap"><div class="kicker">GrowthX · San Francisco</div><h1>${esc(short(sentenceCase(a.title), 90))}</h1>` +
-    `<div class="sub">Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}</div>${body}` +
+    `<div class="sub">Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}</div>` +
+    (icsUrl && n ? `<a class="cal" href="${esc(icsUrl)}">Add whole week to calendar</a>` : "") +
+    body +
     `<div class="foot"><span>growthx-mcp.vercel.app</span><span>${esc(`${a.from} – ${a.to}`)} · times in PT</span></div></div></body></html>`
   );
 }

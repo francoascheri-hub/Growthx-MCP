@@ -1,8 +1,9 @@
 // PDF agenda: black, thin white type, #95bf47 accent. Rendered on the fly with @react-pdf/renderer.
 // One landscape page: header, week strip, then at most 2 rows of cards (3 per row, 4 when there are 7-8 events).
 import path from "node:path";
-import { Document, Font, Image, Link, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
+import { Defs, Document, Font, Image, LinearGradient, Link, Page, Rect, Stop, StyleSheet, Svg, Text, View, renderToBuffer } from "@react-pdf/renderer";
 import type { Agenda, AgendaItem } from "./agenda";
+import { initialOf } from "./agendaHtml";
 import { cleanTitle, fmt, realHost, sentenceCase, short, time } from "./format";
 import { laDate } from "./time";
 
@@ -33,7 +34,12 @@ const s = StyleSheet.create({
   cardWrap: { paddingHorizontal: 5, marginBottom: 10 },
   card: { backgroundColor: "#0e0e0e", border: "1pt solid #262626", borderRadius: 7, overflow: "hidden" },
   cover: { width: "100%", height: 58, objectFit: "cover" },
-  coverEmpty: { height: 5, backgroundColor: ACCENT },
+  ph: { position: "relative", overflow: "hidden" },
+  phText: { position: "absolute", left: 0, right: 0, textAlign: "center", color: ACCENT, fontWeight: 200, textDecoration: "none" },
+  ov: { fontSize: 6.5, fontWeight: 500, color: "#000", backgroundColor: "#f0b429", borderRadius: 6, paddingVertical: 1, paddingHorizontal: 5, marginTop: 4, alignSelf: "flex-start" },
+  people: { fontSize: 7, color: "#cfe3a8", marginTop: 3 },
+  subRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 },
+  cal: { fontSize: 8, fontWeight: 500, color: "#000", backgroundColor: ACCENT, borderRadius: 8, paddingVertical: 2.5, paddingHorizontal: 9, textDecoration: "none" },
   body: { paddingHorizontal: 9, paddingVertical: 7 },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   pill: { fontSize: 7, fontWeight: 500, color: "#000", backgroundColor: ACCENT, borderRadius: 7, paddingVertical: 1.5, paddingHorizontal: 6 },
@@ -54,12 +60,29 @@ function Card({ it, width, dense }: { it: AgendaItem; width: string; dense: bool
   const host = realHost(e.host);
   const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" · ");
   const url = /^https?:\/\//.test(e.url) ? e.url : undefined;
+  const h = dense ? 36 : 54;
+  // Generic GrowthX cover (initial on black→accent gradient) when there's no usable image.
+  const placeholder = (
+    <View style={[s.ph, { height: h }]}>
+      <Svg width={320} height={h} viewBox="0 0 100 100" preserveAspectRatio="none">
+        <Defs>
+          <LinearGradient id={`g${it.rank}`} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#000" />
+            <Stop offset="0.55" stopColor="#14200a" />
+            <Stop offset="1" stopColor={ACCENT} />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="100" height="100" fill={`url(#g${it.rank})`} />
+      </Svg>
+      <Text style={[s.phText, { top: h * 0.18, fontSize: h * 0.55 }]}>{initialOf(e.title)}</Text>
+    </View>
+  );
   // eslint-disable-next-line jsx-a11y/alt-text -- react-pdf Image has no alt
-  const cover = it.image ? <Image style={dense ? [s.cover, { height: 44 }] : s.cover} src={it.image} /> : <View style={s.coverEmpty} />;
+  const cover = it.image ? <Image style={[s.cover, { height: h }]} src={it.image} /> : placeholder;
   return (
     <View style={[s.cardWrap, { width }]} wrap={false}>
       <View style={s.card}>
-        {url && it.image ? <Link src={url}>{cover}</Link> : cover}
+        {url ? <Link src={url}>{cover}</Link> : cover}
         <View style={s.body}>
           <View style={s.row}>
             <Text style={s.pill}>{`${fmt(e.start, { weekday: "short", month: "short", day: "numeric" })} · ${time(e.start)} PT`}</Text>
@@ -67,7 +90,9 @@ function Card({ it, width, dense }: { it: AgendaItem; width: string; dense: bool
           </View>
           <Text style={s.cardTitle}>{short(cleanTitle(e.title), dense ? 44 : 52)}</Text>
           {meta ? <Text style={s.meta}>{short(meta, dense ? 40 : 52)}</Text> : null}
+          {it.overlapsWith ? <Text style={s.ov}>{`Overlaps with #${it.overlapsWith}`}</Text> : null}
           <Text style={s.why}>{it.why}</Text>
+          {it.people ? <Text style={s.people}>{short(it.people, dense ? 44 : 70)}</Text> : null}
           <View style={s.foot}>
             <View style={s.tags}>
               {e.tags.slice(0, dense ? 2 : 3).map((t) => (
@@ -86,7 +111,7 @@ function Card({ it, width, dense }: { it: AgendaItem; width: string; dense: bool
   );
 }
 
-function AgendaDoc({ a }: { a: Agenda }) {
+function AgendaDoc({ a, icsUrl }: { a: Agenda; icsUrl?: string }) {
   const days: { key: string; items: AgendaItem[] }[] = [];
   for (const it of a.items) {
     const key = laDate(it.e.start);
@@ -101,7 +126,14 @@ function AgendaDoc({ a }: { a: Agenda }) {
       <Page size="LETTER" orientation="landscape" style={s.page}>
         <Text style={s.kicker}>GrowthX · San Francisco</Text>
         <Text style={s.title}>{short(sentenceCase(a.title), 80)}</Text>
-        <Text style={s.subtitle}>{`Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}`}</Text>
+        <View style={s.subRow}>
+          <Text style={[s.subtitle, { marginTop: 0 }]}>{`Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}`}</Text>
+          {icsUrl && n ? (
+            <Link src={icsUrl} style={s.cal}>
+              Add whole week to calendar (.ics)
+            </Link>
+          ) : null}
+        </View>
         {n ? (
           <>
             <View style={s.strip} wrap={false}>
@@ -136,6 +168,6 @@ function AgendaDoc({ a }: { a: Agenda }) {
   );
 }
 
-export function renderAgendaPdf(a: Agenda): Promise<Buffer> {
-  return renderToBuffer(<AgendaDoc a={a} />);
+export function renderAgendaPdf(a: Agenda, icsUrl?: string): Promise<Buffer> {
+  return renderToBuffer(<AgendaDoc a={a} icsUrl={icsUrl} />);
 }

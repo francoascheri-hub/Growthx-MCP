@@ -327,15 +327,24 @@ export async function planMyWeek(args: {
   const maxEvents = args.max_events ?? 6;
   const chosen: typeof ranked = [];
   const skipped: { title: string; reason: string }[] = [];
+  // Overlaps: the higher-scored event wins. A close runner-up (>= 80% of its score) is kept once as a
+  // flagged alternative ("Overlaps with #N"); anything else that clashes is skipped.
+  const altOf = new Map<string, string>();
   for (const r of ranked) {
     if (chosen.length >= maxEvents) break;
     if (r.score <= 0) continue;
     const clash = chosen.find((c) => overlaps(c.e, r.e));
     if (clash) {
-      skipped.push({ title: r.e.title, reason: `conflicts with ${clash.e.title}` });
-      continue;
+      const canAlt =
+        r.score >= clash.score * 0.8 && ![...altOf.values()].includes(clash.e.id) && !altOf.has(clash.e.id) &&
+        chosen.filter((c) => c !== clash && overlaps(c.e, r.e)).length === 0;
+      if (!canAlt) {
+        skipped.push({ title: r.e.title, reason: `conflicts with ${clash.e.title} (higher score)` });
+        continue;
+      }
+      altOf.set(r.e.id, clash.e.id);
     }
-    if (chosen.filter((c) => laDate(c.e.start) === laDate(r.e.start)).length >= perDay) continue;
+    if (chosen.filter((c) => laDate(c.e.start) === laDate(r.e.start)).length >= perDay + (clash ? 1 : 0)) continue;
     chosen.push(r);
   }
   const rankOf = new Map(chosen.map((c, i) => [c.e.id, i + 1]));
@@ -346,6 +355,7 @@ export async function planMyWeek(args: {
     agenda: chosen.map((r) => ({
       day: laLabel(r.e.start).split(",")[0],
       rank: rankOf.get(r.e.id),
+      overlaps_with: altOf.has(r.e.id) ? rankOf.get(altOf.get(r.e.id)!) : undefined,
       ...summarize(r.e),
       why: r.reasons.join("; ") || "general fit",
       calendar: googleCalendarUrl(r.e),
@@ -405,6 +415,24 @@ function googleCalendarUrl(e: GxEvent) {
 }
 
 const icsEscape = (s: string) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+
+function vevent(e: GxEvent) {
+  return [
+    "BEGIN:VEVENT", `UID:${e.id}@growthx-mcp`, `DTSTAMP:${icsDate(new Date().toISOString())}`,
+    `DTSTART:${icsDate(e.start)}`, `DTEND:${icsDate(e.end)}`,
+    `SUMMARY:${icsEscape(e.title)}`, `LOCATION:${icsEscape([e.venue, e.city].filter(Boolean).join(", "))}`,
+    `DESCRIPTION:${icsEscape(`${e.description.slice(0, 500)}\n\nRegister: ${e.url}`)}`, `URL:${e.url}`,
+    "END:VEVENT",
+  ];
+}
+
+/** One .ics calendar with several events (whole-week import). */
+export function icsCalendar(events: GxEvent[], name = "GrowthX agenda") {
+  return [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GrowthX//MCP//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    `X-WR-CALNAME:${icsEscape(name)}`, ...events.flatMap(vevent), "END:VCALENDAR",
+  ].join("\r\n");
+}
 
 export async function addToCalendar(args: { event_id: string }) {
   const e = await requireEvent(args.event_id);

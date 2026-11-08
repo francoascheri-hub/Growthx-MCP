@@ -3,8 +3,8 @@
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events-v3.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v3.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v4.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v4.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
@@ -102,7 +102,11 @@ const JS = `
   else v.items.forEach(function(it){
     var c=el("article","card");
     var cov=el("div","cover");
-    if(it.cover) cov.style.backgroundImage="url('"+it.cover.replace(/'/g,"%27")+"'),linear-gradient(135deg,#95bf47,#2f4a14)";
+    cov.appendChild(el("span","ini",it.initial||(it.title||"G").charAt(0).toUpperCase()));
+    if(it.cover){
+      var img=el("img","cimg"); img.alt=""; img.onerror=function(){ if(img.parentNode) img.parentNode.removeChild(img); };
+      img.src=it.cover; cov.appendChild(img);
+    }
     c.appendChild(cov);
     var body=el("div","body");
     var row=el("div","row");
@@ -111,7 +115,9 @@ const JS = `
     body.appendChild(row);
     body.appendChild(el("div","t",it.title));
     if(it.meta) body.appendChild(el("div","m",it.meta));
+    if(it.overlapsWith) body.appendChild(el("span","ov","Overlaps with #"+it.overlapsWith));
     if(it.why) body.appendChild(el("div","w",it.why));
+    if(it.people) body.appendChild(el("div","pp",it.people));
     var foot=el("div","f");
     var tags=el("div","tags");
     (it.tags||[]).forEach(function(t){ tags.appendChild(el("span","tag","#"+t)); });
@@ -137,6 +143,11 @@ const JS = `
     var pdfWrap=el("div","btns");
     var pdf=el("button","btn","Download PDF");
     pdf.type="button"; pdf.onclick=function(){ openLink(v.pdfUrl); };
+    if(v.icsUrl&&v.items&&v.items.length){
+      var wk=el("button","btn pri","Add whole week to calendar");
+      wk.type="button"; wk.onclick=function(){ openLink(v.icsUrl); };
+      pdfWrap.appendChild(wk);
+    }
     pdfWrap.appendChild(pdf);
     w.appendChild(pdfWrap);
   }
@@ -164,6 +175,7 @@ const JS = `
       from: (data.week&&data.week.start)||"",
       to: (data.week&&data.week.end)||"",
       pdfUrl: data.pdfUrl||"",
+      icsUrl: data.pdfUrl?String(data.pdfUrl).replace("/api/agenda.pdf","/api/agenda.ics"):"",
       days: [],
       items: items.map(function(ev,i){
         return {
