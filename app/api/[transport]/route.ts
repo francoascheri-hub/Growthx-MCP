@@ -227,7 +227,7 @@ const handler = createMcpHandler(
       },
       ({ interests, ...a }) =>
         runUi(
-          () => t.planMyWeek({ ...a, goal: [a.goal, interests?.join(", ")].filter(Boolean).join("; ") || "meet founders and builders" }),
+          () => t.planMyWeek({ ...a, interests, goal: [a.goal, interests?.join(", ")].filter(Boolean).join("; ") || "meet founders and builders" }),
           () => ({ tool: "plan", title: interests?.length ? interests.join(" · ") : undefined }),
         ),
     );

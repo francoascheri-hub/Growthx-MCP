@@ -326,6 +326,8 @@ export async function planMyWeek(args: {
   date_to?: string;
   max_per_day?: number;
   max_events?: number;
+  /** Each stated interest gets its best event before the rest is filled by overall score. */
+  interests?: string[];
 }) {
   const events = await getEvents();
   const today = laDate(new Date().toISOString());
@@ -346,16 +348,25 @@ export async function planMyWeek(args: {
   // Overlaps: the higher-scored event wins. A close runner-up (>= 80% of its score) is kept once as a
   // flagged alternative ("Overlaps with #N"); anything else that clashes is skipped.
   const altOf = new Map<string, string>();
+  // Coverage first: the best non-conflicting event for each stated interest, so one dominant topic
+  // (e.g. hackathons) can't crowd out another (e.g. security).
+  for (const interest of (args.interests ?? []).slice(0, 4)) {
+    if (chosen.length >= maxEvents) break;
+    const { ranked: byInterest } = await rank(interest, pool);
+    const best = byInterest.find((x) => x.score > 0 && !chosen.some((c) => c.e.id === x.e.id || overlaps(c.e, x.e)));
+    const main = best && ranked.find((m) => m.e.id === best.e.id);
+    if (main) chosen.push(main);
+  }
   for (const r of ranked) {
     if (chosen.length >= maxEvents) break;
-    if (r.score <= 0) continue;
+    if (r.score <= 0 || chosen.includes(r)) continue;
     const clash = chosen.find((c) => overlaps(c.e, r.e));
     if (clash) {
       const canAlt =
         r.score >= clash.score * 0.8 && ![...altOf.values()].includes(clash.e.id) && !altOf.has(clash.e.id) &&
         chosen.filter((c) => c !== clash && overlaps(c.e, r.e)).length === 0;
       if (!canAlt) {
-        skipped.push({ title: r.e.title, reason: `conflicts with ${clash.e.title} (higher score)` });
+        skipped.push({ title: r.e.title, reason: `conflicts with ${clash.e.title}${clash.score >= r.score ? " (higher score)" : " (covers another interest)"}` });
         continue;
       }
       altOf.set(r.e.id, clash.e.id);
@@ -363,7 +374,7 @@ export async function planMyWeek(args: {
     if (chosen.filter((c) => laDate(c.e.start) === laDate(r.e.start)).length >= perDay + (clash ? 1 : 0)) continue;
     chosen.push(r);
   }
-  const rankOf = new Map(chosen.map((c, i) => [c.e.id, i + 1]));
+  const rankOf = new Map([...chosen].sort((a, b) => b.score - a.score).map((c, i) => [c.e.id, i + 1]));
   chosen.sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
   return {
     goal: args.goal,
