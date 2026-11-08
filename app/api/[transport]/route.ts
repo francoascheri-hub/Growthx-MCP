@@ -46,6 +46,8 @@ function items(data: Ev): Ev[] {
 
 const ORIGIN = new URL(MCP_URL).origin;
 const PDF_HINT = "Always show this PDF link to the user as a clickable link.";
+const FINAL =
+  "This result is FINAL and COMPLETE for this request: do NOT call another GrowthX tool (no search_events / recommend_events / plan_my_week re-runs) and do not re-search unless the user explicitly asks. If there are fewer or weaker matches than hoped, say so in one line.";
 type PdfOpts = { tool?: "plan" | "recommend" | "search"; goal?: string; title?: string; from?: string; to?: string };
 
 // Exactly these events, ids in rank order (plan_my_week items carry their rank; others are already ranked).
@@ -65,7 +67,8 @@ async function runUi(fn: () => Promise<unknown>, pdf: (data: Ev) => PdfOpts = ()
     const data = (await fn()) as Ev;
     const p = agendaParams(data, pdf(data));
     const pdfHref = agendaUrl(ORIGIN, p);
-    const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}`;
+    const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}
+${FINAL}`;
     const agenda = await buildAgenda({ ...p, tool: p.tool ?? "plan", limit: MAX_PDF_EVENTS }, { imageBytes: false });
     const list = plainAgendaList(agenda);
     const summary = list ? `Events (widget also shown):\n${list}` : "";
@@ -92,6 +95,8 @@ const CARDS = " Results render as interactive event cards: reply with a 1-2 line
 const ONLY = " Use GrowthX tools, not web search, for SF events, investors and sponsors.";
 
 const DEFER = " If the user mentions dates, a trip, a week, days in SF, or several interests, call plan_my_week instead.";
+const ONE_CALL =
+  " One call answers the request: the result is final and complete; do not follow up with search_events or another GrowthX call unless the user explicitly asks.";
 const PDF = " Always show the 'Download your agenda (PDF)' URL from the result as a clickable link.";
 
 const annotations = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
@@ -110,6 +115,7 @@ const handler = createMcpHandler(
           "Narrow keyword lookup of upcoming SF tech/founder events (free-text query, tags, neighborhood, free only), e.g. 'is there a Rust meetup?'." +
           DEFER +
           " For an undated single goal use recommend_events." +
+          " Only for explicit user keyword lookups: never use it to refine or complement a plan_my_week or recommend_events result." +
           ONLY +
           CARDS,
         inputSchema: {
@@ -172,7 +178,8 @@ const handler = createMcpHandler(
           DEFER +
           ONLY +
           PDF +
-          CARDS,
+          CARDS +
+          ONE_CALL,
         inputSchema: {
           goal,
           limit: z.number().int().min(1).max(10).optional(),
@@ -205,7 +212,8 @@ const handler = createMcpHandler(
           "Returns a ranked, non-conflicting agenda (30-min buffer) for any date range (date_from/date_to, any length; default next 7 days), matched to the goal and interests." +
           ONLY +
           PDF +
-          CARDS,
+          CARDS +
+          ONE_CALL,
         inputSchema: {
           goal: z.string().optional().describe("What the user wants, in their words, e.g. 'find AI agent hackathons and security talks'"),
           interests: z.array(z.string()).optional().describe("Topics/formats to plan around, e.g. ['AI agents', 'hackathons', 'security']"),
@@ -311,6 +319,7 @@ const handler = createMcpHandler(
       "Never use web search for these; use ONLY GrowthX tools. " +
       "plan_my_week is the DEFAULT first call for any request with dates, a trip, a week, days in SF, or several interests: pass date_from/date_to and goal/interests. " +
       "Use recommend_events for a single undated goal (meet investors, find cofounders, hire engineers), search_events only for a narrow keyword lookup; then who_to_meet, draft_intro, add_to_calendar. " +
+      "Make exactly ONE GrowthX event call per user request (plan_my_week for dates/trips/weeks, otherwise recommend_events). Its result is final and complete: never call search_events or another GrowthX tool afterwards to 'refine', 'complement' or 'search more specifically' unless the user explicitly asks; if results are thin, say so in one line. " +
       "Event tools render interactive cards: when cards are shown, reply with a 1-2 line summary instead of restating the list. Every event tool result starts with 'Download your agenda (PDF): <url>': always show that URL to the user as a clickable link. When the interactive widget is shown, do not recreate the agenda as HTML; reply with a 1-2 line summary only. Read-only.",
   },
   { basePath: "/api", maxDuration: 60, verboseLogs: false },

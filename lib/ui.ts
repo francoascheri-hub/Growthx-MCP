@@ -3,8 +3,8 @@
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events-v4.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v4.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v5.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v5.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
@@ -203,9 +203,13 @@ const JS = `
     return null;
   }
 
+  // Height of the content itself (documentElement.scrollHeight never shrinks below the iframe viewport).
+  var lastH=0;
   function reportSize(){
-    var h=Math.ceil(document.documentElement.scrollHeight);
-    notify("ui/notifications/size-changed",{width:Math.ceil(document.documentElement.scrollWidth),height:h});
+    var h=Math.ceil(root.getBoundingClientRect().height);
+    if(!h||h===lastH) return;
+    lastH=h;
+    notify("ui/notifications/size-changed",{height:h});
     try{ if(window.openai&&window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); }catch(e){}
   }
 
@@ -233,7 +237,8 @@ const JS = `
     rpc("ui/initialize",{protocolVersion:"2026-01-26",appInfo:{name:"growthx-events",version:"0.2.0"},appCapabilities:{}})
       .then(function(){ notify("ui/notifications/initialized",{}); },function(){ notify("ui/notifications/initialized",{}); });
   }
-  if(window.ResizeObserver) new ResizeObserver(reportSize).observe(document.body);
+  if(window.ResizeObserver) new ResizeObserver(reportSize).observe(root);
+  reportSize();
 })();
 `;
 

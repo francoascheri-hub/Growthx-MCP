@@ -55,7 +55,23 @@ const GOAL_EXPANSIONS: [RegExp, string[]][] = [
   [/cofounder|co-founder/i, ["founders", "community"]],
   [/customer|sell|sales|gtm|design partner/i, ["gtm", "growth", "b2b-saas"]],
   [/agent/i, ["agents", "ai"]],
+  [/secur|infosec|cyber|appsec|privacy|seguridad/i, ["security"]],
+  [/hackat|buildathon/i, ["hackathon", "devtools"]],
 ];
+
+// A goal keyword also matches its synonyms (counted once), so "security" finds infosec/cyber/appsec events.
+const KEYWORD_SYNONYMS: Record<string, string[]> = {
+  security: ["security", "infosec", "cyber", "appsec", "devsecops", "pentest", "red team", "threat", "privacy", "zero trust"],
+  seguridad: ["security", "infosec", "cyber", "seguridad"],
+  infosec: ["security", "infosec", "cyber", "appsec"],
+  cybersecurity: ["security", "infosec", "cyber"],
+  hackathon: ["hackathon", "hack night", "buildathon", "hack day"],
+  hackathons: ["hackathon", "hack night", "buildathon", "hack day"],
+  agent: ["agent", "agentic"],
+  agents: ["agent", "agentic"],
+  investors: ["investor", "venture", "angel"],
+  inversores: ["investor", "venture", "angel"],
+};
 
 export async function goalToFilters(goal: string): Promise<Filters & { via: "llm" | "rules" }> {
   const tags = new Set(deriveTags(goal));
@@ -84,7 +100,7 @@ function scoreEvent(e: GxEvent, f: Filters): { score: number; reasons: string[] 
     reasons.push(`topics match: ${tagHits.join(", ")}`);
   }
   const hay = `${e.title} ${e.description} ${e.host}`.toLowerCase();
-  const kwHits = f.keywords.filter((k) => hay.includes(k));
+  const kwHits = f.keywords.filter((k) => (KEYWORD_SYNONYMS[k] ?? [k]).some((a) => hay.includes(a)));
   if (kwHits.length) {
     score += kwHits.length * 2;
     reasons.push(`mentions ${kwHits.slice(0, 4).join(", ")}`);

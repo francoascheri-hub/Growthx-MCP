@@ -58,12 +58,14 @@ const KEYWORDS: Record<string, RegExp> = {
   robotics: /\b(robot|robotics|hardware|embodied)/i,
   hiring: /\b(hiring|recruit|career|job)/i,
   community: /\b(community|networking|happy hour|mixer|social|meetup)\b/i,
-  security: /\b(security|safety|trust)\b/i,
+  security:
+    /\b(security|safety|trust|infosec|cyber ?security|cyber|appsec|devsecops|pentest(ing)?|red team(ing)?|threat|privacy|zero trust|soc ?2|seguridad|ciberseguridad)\b/i,
 };
 
 const TAG_SYNONYMS: Record<string, string> = {
   "developer tools": "devtools", "developer-tools": "devtools", hackathons: "hackathon", "artificial intelligence": "ai",
-  "machine learning": "ai", "open source": "open-source", startups: "founders", startup: "founders", networking: "community",
+  "machine learning": "ai", "open source": "open-source", infosec: "security", cybersecurity: "security",
+  "cyber security": "security", cyber: "security", appsec: "security", seguridad: "security", startups: "founders", startup: "founders", networking: "community",
 };
 
 function normalizeTag(t: string): string {

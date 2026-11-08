@@ -46,6 +46,8 @@ a.reg:hover{text-decoration:underline}
 `;
 
 export const WIDGET_EXTRA_CSS = `
+html,body{height:auto;min-height:0}
+#app{display:flow-root}
 .body .w{flex:0 1 auto}
 .f{margin-top:8px}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:10px}
