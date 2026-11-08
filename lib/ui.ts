@@ -1,10 +1,10 @@
 // MCP Apps (io.modelcontextprotocol/ui) widget for GrowthX event tools.
-// Same black agenda design as lib/agendaHtml.ts (PDF + inline artifact). Skybridge uses the same HTML.
+// Same off-black agenda design as lib/agendaHtml.ts (PDF + inline artifact). Skybridge uses the same HTML.
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events-v6.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v6.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v7.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v7.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
@@ -74,90 +74,95 @@ const JS = `
     }
   }
 
+  function btn(cls,label,url){
+    var b=el("button",cls,label);
+    b.type="button"; b.onclick=function(){ openLink(url); };
+    return b;
+  }
+
   function renderAgenda(v){
     root.textContent="";
     var w=el("div","wrap");
-    w.appendChild(el("div","kicker","GrowthX \\u00b7 San Francisco"));
+    var items=v.items||[];
+    w.appendChild(el("div","kicker","GrowthX \u00b7 San Francisco"));
     w.appendChild(el("h1","",v.title||"Your week in SF tech"));
-    w.appendChild(el("div","sub",v.subtitle||""));
+    if(v.subtitle) w.appendChild(el("div","sub",v.subtitle));
     if(v.summary) w.appendChild(el("div","sum",v.summary));
-  if(v.days&&v.days.length){
-    var strip=el("div","strip");
-    v.days.forEach(function(day){
-      var d=el("div","day");
-      d.appendChild(el("div","dn",day.weekday));
-      d.appendChild(el("div","dd",day.date));
-      (day.lines||[]).forEach(function(ln){
-        var line=el("div","dl");
-        line.appendChild(document.createTextNode(ln.time+" \\u00b7 "+ln.title+" \\u00b7 "));
-        var r=el("span","r","#"+ln.rank);
-        line.appendChild(r);
-        d.appendChild(line);
+    if(v.pdfUrl||(v.icsUrl&&items.length)){
+      var acts=el("div","acts");
+      if(v.icsUrl&&items.length) acts.appendChild(btn("btn pri","Add whole week to calendar",v.icsUrl));
+      if(v.pdfUrl) acts.appendChild(btn("btn","Download PDF",v.pdfUrl));
+      w.appendChild(acts);
+    }
+    if(v.days&&v.days.length){
+      var strip=el("div","strip");
+      v.days.forEach(function(day){
+        var d=el("div","day");
+        d.appendChild(el("div","dn",day.weekday));
+        d.appendChild(el("div","dd",day.date));
+        (day.lines||[]).forEach(function(ln){
+          var line=el("div","dl");
+          line.appendChild(el("span","tm",ln.time));
+          line.appendChild(document.createTextNode(" \u00b7 "+ln.title+" \u00b7 "));
+          line.appendChild(el("span","r","#"+ln.rank));
+          d.appendChild(line);
+        });
+        strip.appendChild(d);
       });
-      strip.appendChild(d);
-    });
-    w.appendChild(strip);
-  }
-  var grid=el("div","grid");
-  if(!v.items||!v.items.length) grid.appendChild(el("div","empty","No matching events in this window."));
-  else v.items.forEach(function(it){
-    var c=el("article","card");
-    var cov=el("div","cover");
-    cov.appendChild(el("span","ini",it.initial||(it.title||"G").charAt(0).toUpperCase()));
-    if(it.cover){
-      var img=el("img","cimg"); img.alt=""; img.onerror=function(){ if(img.parentNode) img.parentNode.removeChild(img); };
-      img.src=it.cover; cov.appendChild(img);
+      w.appendChild(strip);
     }
-    c.appendChild(cov);
-    var body=el("div","body");
-    var row=el("div","row");
-    row.appendChild(el("span","pill",it.pill));
-    row.appendChild(el("span","badge","#"+it.rank));
-    body.appendChild(row);
-    body.appendChild(el("div","t",it.title));
-    if(it.meta) body.appendChild(el("div","m",it.meta));
-    if(it.overlapsWith) body.appendChild(el("span","ov","Overlaps with #"+it.overlapsWith));
-    if(it.why) body.appendChild(el("div","w",it.why));
-    if(it.people) body.appendChild(el("div","pp",it.people));
-    var foot=el("div","f");
-    var tags=el("div","tags");
-    (it.tags||[]).forEach(function(t){ tags.appendChild(el("span","tag","#"+t)); });
-    if((it.tags||[]).length){ foot.appendChild(tags); body.appendChild(foot); }
-    var btns=el("div","btns");
-    if(it.url){
-      var b1=el("button","btn pri","Register");
-      b1.type="button"; b1.onclick=function(){ openLink(it.url); };
-      btns.appendChild(b1);
+    if(!items.length){
+      var em=el("div","empty");
+      em.appendChild(el("div","et","No rooms matched this window."));
+      em.appendChild(el("div","eh","Try broadening your interests or widening the dates."));
+      w.appendChild(em);
+    } else {
+      var grid=el("div","grid");
+      items.forEach(function(it,i){
+        var feat=it.rank===1;
+        var c=el("article","card"+(feat?" feat":""));
+        c.style.setProperty("--i",String(i));
+        var cov=el("div","cover");
+        var chips=el("span","chips");
+        chips.appendChild(el("span","chip","#"+it.rank));
+        if(feat) chips.appendChild(el("span","chip best","Best pick"));
+        cov.appendChild(chips);
+        cov.appendChild(el("span","ini",it.initial||(it.title||"G").charAt(0).toUpperCase()));
+        if(it.cover){
+          var img=el("img","cimg"); img.alt=""; img.onerror=function(){ if(img.parentNode) img.parentNode.removeChild(img); };
+          img.src=it.cover; cov.appendChild(img);
+        }
+        c.appendChild(cov);
+        var body=el("div","body");
+        var row=el("div","row");
+        if(it.pill) row.appendChild(el("span","pill",it.pill));
+        if(it.overlapsWith) row.appendChild(el("span","ov","Overlaps with #"+it.overlapsWith));
+        if(row.childNodes.length) body.appendChild(row);
+        body.appendChild(el("div","t",it.title));
+        if(it.meta) body.appendChild(el("div","m",it.meta));
+        if(it.why) body.appendChild(el("div","w",it.why));
+        if(it.people) body.appendChild(el("div","pp",it.people));
+        if((it.tags||[]).length){
+          var foot=el("div","f"), tags=el("div","tags");
+          it.tags.forEach(function(t){ tags.appendChild(el("span","tag","#"+t)); });
+          foot.appendChild(tags); body.appendChild(foot);
+        }
+        var btns=el("div","btns");
+        if(it.url) btns.appendChild(btn("btn pri","Register",it.url));
+        var cal=gcal(it);
+        if(cal) btns.appendChild(btn("btn","Add to calendar",cal));
+        if(btns.childNodes.length) body.appendChild(btns);
+        c.appendChild(body);
+        grid.appendChild(c);
+      });
+      w.appendChild(grid);
     }
-    var cal=gcal(it);
-    if(cal){
-      var b2=el("button","btn","Add to calendar");
-      b2.type="button"; b2.onclick=function(){ openLink(cal); };
-      btns.appendChild(b2);
-    }
-    body.appendChild(btns);
-    c.appendChild(body);
-    grid.appendChild(c);
-  });
-  w.appendChild(grid);
-  if(v.pdfUrl){
-    var pdfWrap=el("div","btns");
-    var pdf=el("button","btn","Download PDF");
-    pdf.type="button"; pdf.onclick=function(){ openLink(v.pdfUrl); };
-    if(v.icsUrl&&v.items&&v.items.length){
-      var wk=el("button","btn pri","Add whole week to calendar");
-      wk.type="button"; wk.onclick=function(){ openLink(v.icsUrl); };
-      pdfWrap.appendChild(wk);
-    }
-    pdfWrap.appendChild(pdf);
-    w.appendChild(pdfWrap);
-  }
-  var foot=el("div","foot");
-  foot.appendChild(el("span","", "growthx-mcp.vercel.app"));
-  foot.appendChild(el("span","", (v.from||"")+" \\u2013 "+(v.to||"")+" \\u00b7 times in PT"));
-  w.appendChild(foot);
-  root.appendChild(w);
-  reportSize();
+    var ft=el("div","foot");
+    ft.appendChild(el("span","","growthx-mcp.vercel.app"));
+    ft.appendChild(el("span","",(v.from||"")+" \u2013 "+(v.to||"")+" \u00b7 times in PT"));
+    w.appendChild(ft);
+    root.appendChild(w);
+    reportSize();
   }
 
   function render(data){
@@ -244,5 +249,5 @@ const JS = `
 `;
 
 export function eventsWidgetHtml(): string {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${CSS}</style></head><body><div id="app"><div class="wrap"><div class="empty">Loading events…</div></div></div><script>${JS}</script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${CSS}</style></head><body><div id="app"><div class="wrap"><div class="empty"><div class="eh">Loading events…</div></div></div></div><script>${JS}</script></body></html>`;
 }
