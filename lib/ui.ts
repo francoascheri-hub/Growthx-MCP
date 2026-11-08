@@ -3,8 +3,8 @@
 
 import { AGENDA_CSS, WIDGET_EXTRA_CSS } from "./agendaHtml";
 
-export const EVENTS_UI_URI = "ui://growthx/events-v5.html";
-export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v5.html";
+export const EVENTS_UI_URI = "ui://growthx/events-v6.html";
+export const EVENTS_SKYBRIDGE_URI = "ui://growthx/events-skybridge-v6.html";
 export const MCP_APP_MIME = "text/html;profile=mcp-app";
 export const SKYBRIDGE_MIME = "text/html+skybridge";
 
@@ -80,6 +80,7 @@ const JS = `
     w.appendChild(el("div","kicker","GrowthX \\u00b7 San Francisco"));
     w.appendChild(el("h1","",v.title||"Your week in SF tech"));
     w.appendChild(el("div","sub",v.subtitle||""));
+    if(v.summary) w.appendChild(el("div","sum",v.summary));
   if(v.days&&v.days.length){
     var strip=el("div","strip");
     v.days.forEach(function(day){

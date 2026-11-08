@@ -22,15 +22,15 @@ const ACCENT = "#95bf47";
 const s = StyleSheet.create({
   page: { backgroundColor: "#000", color: "#fff", fontFamily: "Inter", fontWeight: 300, paddingTop: 28, paddingHorizontal: 32, paddingBottom: 38 },
   kicker: { fontSize: 8, fontWeight: 500, color: ACCENT, letterSpacing: 2, textTransform: "uppercase" },
-  title: { fontSize: 26, fontWeight: 200, marginTop: 5, lineHeight: 1.1 },
+  title: { fontSize: 24, fontWeight: 200, marginTop: 4, lineHeight: 1.1 },
   subtitle: { fontSize: 10.5, color: "#bdbdbd", marginTop: 5 },
-  strip: { flexDirection: "row", marginTop: 14, borderTop: "1pt solid #333", borderBottom: "1pt solid #333" },
-  day: { flex: 1, paddingVertical: 7, paddingHorizontal: 6, borderRight: "1pt solid #222" },
+  strip: { flexDirection: "row", marginTop: 10, borderTop: "1pt solid #333", borderBottom: "1pt solid #333" },
+  day: { flex: 1, paddingVertical: 5, paddingHorizontal: 6, borderRight: "1pt solid #222" },
   dayName: { fontSize: 7, fontWeight: 500, color: ACCENT, letterSpacing: 1.5, textTransform: "uppercase" },
-  dayNum: { fontSize: 14, fontWeight: 200, marginTop: 1, marginBottom: 4 },
+  dayNum: { fontSize: 12, fontWeight: 200, marginTop: 1, marginBottom: 3 },
   dayLine: { fontSize: 7, color: "#d8d8d8", marginBottom: 3, lineHeight: 1.25 },
   rankInline: { color: ACCENT, fontWeight: 500 },
-  grid: { flexDirection: "row", flexWrap: "wrap", marginTop: 12, marginHorizontal: -5 },
+  grid: { flexDirection: "row", flexWrap: "wrap", marginTop: 10, marginHorizontal: -5 },
   cardWrap: { paddingHorizontal: 5, marginBottom: 10 },
   card: { backgroundColor: "#0e0e0e", border: "1pt solid #262626", borderRadius: 7, overflow: "hidden" },
   cover: { width: "100%", height: 58, objectFit: "cover" },
@@ -38,6 +38,7 @@ const s = StyleSheet.create({
   phText: { position: "absolute", left: 0, right: 0, textAlign: "center", color: ACCENT, fontWeight: 200, textDecoration: "none" },
   ov: { fontSize: 6.5, fontWeight: 500, color: "#000", backgroundColor: "#f0b429", borderRadius: 6, paddingVertical: 1, paddingHorizontal: 5, marginTop: 4, alignSelf: "flex-start" },
   people: { fontSize: 7, color: "#cfe3a8", marginTop: 3 },
+  sum: { marginTop: 7, paddingVertical: 4, paddingHorizontal: 9, borderLeft: `2pt solid ${ACCENT}`, backgroundColor: "#0b1206", color: "#e6e6e6", fontSize: 7.5, lineHeight: 1.35 },
   subRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 },
   cal: { fontSize: 8, fontWeight: 500, color: "#000", backgroundColor: ACCENT, borderRadius: 8, paddingVertical: 2.5, paddingHorizontal: 9, textDecoration: "none" },
   body: { paddingHorizontal: 9, paddingVertical: 7 },
@@ -60,7 +61,7 @@ function Card({ it, width, dense }: { it: AgendaItem; width: string; dense: bool
   const host = realHost(e.host);
   const meta = [e.venue, host && `by ${host}`, e.price].filter(Boolean).join(" · ");
   const url = /^https?:\/\//.test(e.url) ? e.url : undefined;
-  const h = dense ? 36 : 54;
+  const h = dense ? 30 : 50;
   // Generic GrowthX cover (initial on black→accent gradient) when there's no usable image.
   const placeholder = (
     <View style={[s.ph, { height: h }]}>
@@ -134,6 +135,7 @@ function AgendaDoc({ a, icsUrl }: { a: Agenda; icsUrl?: string }) {
             </Link>
           ) : null}
         </View>
+        <Text style={s.sum}>{a.summary}</Text>
         {n ? (
           <>
             <View style={s.strip} wrap={false}>

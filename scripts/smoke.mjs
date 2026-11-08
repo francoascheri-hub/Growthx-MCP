@@ -68,7 +68,7 @@ await call("similar_events", { event_id: id }, (d) => Array.isArray(d.similar));
 const plan = await call(
   "plan_my_week",
   { goal: "AI agent hackathons and security talks", interests: ["AI agents", "security"], date_from: new Date().toISOString().slice(0, 10) },
-  (d) => Array.isArray(d.agenda) && typeof d.pdfUrl === "string",
+  (d) => Array.isArray(d.agenda) && typeof d.pdfUrl === "string" && typeof d.summary === "string" && d.summary.length > 0,
 );
 
 // Relevance: topic asks match title/description only (never the host), no padding with unrelated events.

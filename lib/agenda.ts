@@ -1,5 +1,6 @@
 // Data for the downloadable PDF agenda (/api/agenda.pdf). Same events as the tool that linked to it.
 import { getEventById, getEvents } from "./data";
+import { cleanTitle, fmt, short, time } from "./format";
 import { laDate } from "./time";
 import { planMyWeek, reasonsFor, recommendEvents, searchEvents } from "./tools";
 import type { GxEvent } from "./types";
@@ -22,8 +23,10 @@ export type AgendaItem = {
   overlapsWith?: number;
   /** "Investors: … · Sponsors: …" from intel, if any. */
   people?: string;
+  /** No ranking signal for the goal (closest match only). */
+  weak?: boolean;
   cover?: string; image?: { data: Buffer; format: "jpg" | "png" } };
-export type Agenda = { title: string; from: string; to: string; total: number; items: AgendaItem[] };
+export type Agenda = { title: string; from: string; to: string; total: number; items: AgendaItem[]; summary: string };
 
 export const MAX_PDF_EVENTS = 8;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -191,7 +194,14 @@ export async function buildAgenda(q: AgendaQuery, opts: { imageBytes?: boolean }
   const covers = await Promise.all(picked.map((e) => coverUrl(e.url)));
   const images = opts.imageBytes ? await Promise.all(covers.map((c) => coverImage(c))) : [];
   const items = picked
-    .map((e, i) => ({ rank: i + 1, e, why: whyFor(e, reasons.get(e.id) ?? [], i + 1), cover: covers[i], image: images[i] }))
+    .map((e, i) => ({
+      rank: i + 1,
+      e,
+      why: whyFor(e, reasons.get(e.id) ?? [], i + 1),
+      weak: Boolean(q.goal) && !(reasons.get(e.id) ?? []).length,
+      cover: covers[i],
+      image: images[i],
+    }))
     .sort((a, b) => new Date(a.e.start).getTime() - new Date(b.e.start).getTime());
   const ms = (iso: string) => new Date(iso).getTime();
   const BUF = 30 * 60_000;
@@ -203,5 +213,31 @@ export async function buildAgenda(q: AgendaQuery, opts: { imageBytes?: boolean }
     Object.assign(it, { people: peopleOf(it.e) });
   }
   const total = (await getEvents()).filter((e) => laDate(e.start) >= from && laDate(e.start) <= to).length;
-  return { title: q.title ?? q.goal ?? "Your week in SF tech", from, to, total, items };
+  return { title: q.title ?? q.goal ?? "Your week in SF tech", from, to, total, items, summary: agendaSummary(items) };
+}
+
+/**
+ * 2-3 line deterministic summary shown above the week strip (widget, HTML, PDF) and first in the tool text:
+ * how many match, the best pick (#1) and why, and what is optional (overlaps, weak match, paid).
+ */
+export function agendaSummary(items: AgendaItem[]): string {
+  if (!items.length) return "No events match in this window. Try broader interests or other dates.";
+  const best = items.find((it) => it.rank === 1) ?? items[0];
+  const name = (it: AgendaItem) => short(cleanTitle(it.e.title), 60);
+  const when = (it: AgendaItem) => `${fmt(it.e.start, { weekday: "short", month: "short", day: "numeric" })}, ${time(it.e.start)}`;
+  const why = best.why.replace(/\.$/, "");
+  if (items.length === 1) return `Only 1 event matches: ${name(best)} (${when(best)}) is the one to go to.\n${why}.`;
+  const lines = [`${items.length} events match. Best pick: #1 ${name(best)} (${when(best)}).`, `Why: ${why}.`];
+  const paid = (it: AgendaItem) => /\$\s?\d/.test(it.e.price) && !/free/i.test(it.e.price);
+  const optional = [...items]
+    .sort((a, b) => a.rank - b.rank)
+    .filter((it) => it.rank !== 1)
+    .map((it) => {
+      const r = it.overlapsWith ? `overlaps #${it.overlapsWith}` : it.weak ? "weak match" : paid(it) ? `paid (${it.e.price})` : "";
+      return r ? `#${it.rank} ${r}` : "";
+    })
+    .filter(Boolean)
+    .slice(0, 3);
+  if (optional.length) lines.push(`Optional: ${optional.join("; ")}.`);
+  return lines.join("\n");
 }

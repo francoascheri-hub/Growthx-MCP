@@ -12,6 +12,7 @@ body{background:#000;color:#fff;font:300 14px/1.45 Inter,"Helvetica Neue",system
 .kicker{font-size:11px;font-weight:500;color:#95bf47;letter-spacing:.2em;text-transform:uppercase}
 h1{font-size:clamp(30px,5vw,48px);font-weight:200;line-height:1.08;margin-top:10px;letter-spacing:-.01em}
 .sub{color:#bdbdbd;font-size:15px;margin-top:8px}
+.sum{margin-top:14px;padding:10px 14px;border-left:3px solid #95bf47;background:#0b1206;color:#e6e6e6;font-size:13px;line-height:1.5;white-space:pre-line;border-radius:0 8px 8px 0}
 .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));margin-top:26px;border-top:1px solid #333;border-bottom:1px solid #333}
 .day{padding:12px 10px;border-right:1px solid #222}
 .day:last-child{border-right:0}
@@ -60,6 +61,7 @@ html,body{height:auto;min-height:0}
 export type AgendaWidgetView = {
   title: string;
   subtitle: string;
+  summary: string;
   from: string;
   to: string;
   pdfUrl: string;
@@ -126,6 +128,7 @@ export function agendaWidgetView(a: Agenda, pdfUrl: string): AgendaWidgetView {
   });
   return {
     title: short(sentenceCase(a.title), 90),
+    summary: a.summary,
     subtitle: `Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}`,
     from: a.from,
     to: a.to,
@@ -190,6 +193,7 @@ export function agendaHtml(a: Agenda, icsUrl?: string): string {
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GrowthX events</title><style>${AGENDA_CSS}</style></head>` +
     `<body><div class="wrap"><div class="kicker">GrowthX · San Francisco</div><h1>${esc(short(sentenceCase(a.title), 90))}</h1>` +
     `<div class="sub">Your ${n} best room${n === 1 ? "" : "s"}, ranked from ${a.total} SF event${a.total === 1 ? "" : "s"}</div>` +
+    `<div class="sum">${esc(a.summary)}</div>` +
     (icsUrl && n ? `<a class="cal" href="${esc(icsUrl)}">Add whole week to calendar</a>` : "") +
     body +
     `<div class="foot"><span>growthx-mcp.vercel.app</span><span>${esc(`${a.from} – ${a.to}`)} · times in PT</span></div></div></body></html>`

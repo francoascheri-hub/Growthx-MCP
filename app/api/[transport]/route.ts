@@ -71,10 +71,15 @@ async function runUi(fn: () => Promise<unknown>, pdf: (data: Ev) => PdfOpts = ()
     const link = `Download your agenda (PDF): ${pdfHref}\n${PDF_HINT}\n${FINAL}${note}`;
     const agenda = await buildAgenda({ ...p, tool: p.tool ?? "plan", limit: MAX_PDF_EVENTS }, { imageBytes: false });
     const list = plainAgendaList(agenda);
-    const summary = list ? `Events (widget also shown):\n${list}` : "";
+    const events = list ? `Events (widget also shown):\n${list}` : "";
+    // Deterministic summary (count, best pick + why, optional ones) leads the text, same as in widget/HTML/PDF.
     return {
-      content: [{ type: "text" as const, text: link }, ...(summary ? [{ type: "text" as const, text: summary }] : []), ...json(data).content],
-      structuredContent: { ...data, pdfUrl: pdfHref, agendaView: agendaWidgetView(agenda, pdfHref) },
+      content: [
+        { type: "text" as const, text: `${agenda.summary}\n\n${link}` },
+        ...(events ? [{ type: "text" as const, text: events }] : []),
+        ...json(data).content,
+      ],
+      structuredContent: { ...data, summary: agenda.summary, pdfUrl: pdfHref, agendaView: agendaWidgetView(agenda, pdfHref) },
     };
   } catch (err) {
     return { ...json({ error: (err as Error).message }), isError: true };
@@ -320,7 +325,7 @@ const handler = createMcpHandler(
       "plan_my_week is the DEFAULT first call for any request with dates, a trip, a week, days in SF, or several interests: pass date_from/date_to and goal/interests. " +
       "Use recommend_events for a single undated goal (meet investors, find cofounders, hire engineers), search_events only for a narrow keyword lookup; then who_to_meet, draft_intro, add_to_calendar. " +
       "Make exactly ONE GrowthX event call per user request (plan_my_week for dates/trips/weeks, otherwise recommend_events). Its result is final and complete: never call search_events or another GrowthX tool afterwards to 'refine', 'complement' or 'search more specifically' unless the user explicitly asks; if results are thin, say so in one line. " +
-      "Event tools render interactive cards: when cards are shown, reply with a 1-2 line summary instead of restating the list. Every event tool result starts with 'Download your agenda (PDF): <url>': always show that URL to the user as a clickable link. When the interactive widget is shown, do not recreate the agenda as HTML; reply with a 1-2 line summary only. Read-only.",
+      "Event tools render interactive cards: when cards are shown, reply with a 1-2 line summary instead of restating the list. Every event tool result starts with a 2-3 line summary (how many match, the best pick and why, what is optional), then 'Download your agenda (PDF): <url>': reuse that summary as your 1-2 line reply and always show the PDF URL as a clickable link. When the interactive widget is shown, do not recreate the agenda as HTML; reply with a 1-2 line summary only. Read-only.",
   },
   { basePath: "/api", maxDuration: 60, verboseLogs: false },
 );
