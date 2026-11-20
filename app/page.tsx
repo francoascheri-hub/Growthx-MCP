@@ -61,57 +61,62 @@ export default async function Home() {
   const demo = demoEvents();
 
   return (
-    <main>
-      <nav className="nav">
-        <span className="logo">
-          <span className="dot" />
-          GrowthX
-        </span>
-        <span className="pill">MCP server · read-only</span>
-      </nav>
+    <>
+      <header className="dark">
+        <div className="wrap">
+          <nav className="nav">
+            <span className="wordmark">GrowthX</span>
+            <span className="pill label">
+              <span className="live-dot" aria-hidden="true" />[ MCP server · read-only ]
+            </span>
+          </nav>
 
-      <section className="hero">
-        <div className="hero-copy">
-          <h1>Add GrowthX to your agent</h1>
-          <p className="sub">SF tech events, people to meet and intros, inside Claude, Cursor or ChatGPT. No new app.</p>
+          <section className="hero">
+            <div className="hero-copy">
+              <h1>Add GrowthX to your agent</h1>
+              <p className="sub">SF tech events, people to meet and intros, inside Claude, Cursor or ChatGPT. No new app.</p>
 
-          <div className="url-field">
-            <code>{mcpUrl}</code>
-            <CopyButton text={mcpUrl} />
-          </div>
-
-          <div className="actions">
-            <details className="claude-steps">
-              <summary className="btn primary">Add to Claude</summary>
-              <ol>
-                <li>Open Claude → Settings → Connectors</li>
-                <li>Click “Add custom connector”</li>
-                <li>Name it GrowthX and paste the MCP URL above</li>
-              </ol>
-            </details>
-            <a className="btn" href={cursorLink}>
-              Add to Cursor
-            </a>
-          </div>
-        </div>
-
-        <div className="chat" aria-label="Example conversation">
-          <div className="bubble user">{DEMO_PROMPT}</div>
-          <div className="bubble agent">
-            <span className="tool-call">growthx · plan_my_week</span>
-            <p>Here are 3 non-conflicting picks, ranked for you:</p>
-            {demo.map((e) => (
-              <div className="event-card" key={e.id}>
-                <div className="event-when">{when(e.start)}</div>
-                <div className="event-title">{e.title}</div>
-                <div className="event-meta">{[e.venue, e.neighborhood].filter(Boolean).join(" · ")}</div>
+              <div className="url-field">
+                <code>{mcpUrl}</code>
+                <CopyButton text={mcpUrl} />
               </div>
-            ))}
-            <div className="added">✓ Added to calendar</div>
-          </div>
-          <p className="chat-note">Example data</p>
+
+              <div className="actions">
+                <details className="claude-steps">
+                  <summary className="btn primary">Add to Claude</summary>
+                  <ol>
+                    <li>Open Claude → Settings → Connectors</li>
+                    <li>Click “Add custom connector”</li>
+                    <li>Name it GrowthX and paste the MCP URL above</li>
+                  </ol>
+                </details>
+                <a className="btn" href={cursorLink}>
+                  Add to Cursor
+                </a>
+              </div>
+            </div>
+
+            <div className="chat" aria-label="Example conversation">
+              <div className="bubble user">{DEMO_PROMPT}</div>
+              <div className="bubble agent">
+                <span className="tool-call label">[ growthx · plan_my_week ]</span>
+                <p>Here are 3 non-conflicting picks, ranked for you:</p>
+                {demo.map((e) => (
+                  <div className="event-card" key={e.id}>
+                    <div className="event-when label">[ {when(e.start)} ]</div>
+                    <div className="event-title">{e.title}</div>
+                    <div className="event-meta">{[e.venue, e.neighborhood].filter(Boolean).join(" · ")}</div>
+                  </div>
+                ))}
+                <div className="added">✓ Added to calendar</div>
+              </div>
+              <p className="chat-note label">[ Example data ]</p>
+            </div>
+          </section>
         </div>
-      </section>
+      </header>
+
+      <main className="wrap">
 
       <section>
         <h2>12 tools your agent can call</h2>
@@ -143,7 +148,11 @@ export default async function Home() {
         </div>
       </section>
 
-      <footer>Read-only. No account needed. Events from the GrowthX catalog of SF tech events.</footer>
-    </main>
+      </main>
+
+      <footer>
+        <div className="wrap">Read-only. No account needed. Events from the GrowthX catalog of SF tech events.</div>
+      </footer>
+    </>
   );
 }
